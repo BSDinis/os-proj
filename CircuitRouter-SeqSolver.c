@@ -55,6 +55,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "lib/list.h"
 #include "maze.h"
 #include "router.h"

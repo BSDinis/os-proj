@@ -1,0 +1,4 @@
+pair.o: pair.c pair.h
+queue.o: queue.c types.h queue.h
+list.o: list.c list.h types.h
+vector.o: vector.c types.h utility.h vector.h

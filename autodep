@@ -1,0 +1,9 @@
+grid.o: grid.c coordinate.h lib/types.h grid.h lib/vector.h lib/types.h
+CircuitRouter-SeqSolver.o: CircuitRouter-SeqSolver.c lib/list.h \
+ lib/types.h maze.h coordinate.h lib/types.h grid.h lib/vector.h \
+ lib/pair.h lib/queue.h router.h lib/timer.h
+maze.o: maze.c coordinate.h lib/types.h grid.h lib/vector.h lib/types.h \
+ lib/list.h maze.h lib/pair.h lib/queue.h
+coordinate.o: coordinate.c coordinate.h lib/types.h lib/pair.h
+router.o: router.c coordinate.h lib/types.h grid.h lib/vector.h \
+ lib/types.h lib/queue.h router.h maze.h lib/list.h lib/pair.h
