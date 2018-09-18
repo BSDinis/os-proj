@@ -1,0 +1,6 @@
+*.o
+autodep
+CircuitRouter-SeqSolver
+*.a
+.*
+*.md
