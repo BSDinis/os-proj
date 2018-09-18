@@ -1,4 +1,4 @@
-#!/bin/env python2
+#!/usr/bin/python
 
 import random
 import sys
