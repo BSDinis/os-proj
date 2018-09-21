@@ -5,8 +5,7 @@ CC := gcc
 INCLUDES := -I. -Ilib
 VPATH := .
 
-# missing -Werror
-CFLAGS := -Wall -fdiagnostics-color=always $(INCLUDES)
+CFLAGS := -Wall -Werror -fdiagnostics-color=always $(INCLUDES)
 LDFLAGS := -L -Wall -Werror -fdiagnostics-color=always $(INCLUDES) 
 LDLIBS := -lpthread -lm
 LDFLAGS += -L./lib
@@ -16,7 +15,7 @@ ifneq ($(strip $(DEBUG)), no)
   CFLAGS += -g
 endif
 
-ifneq ($(strip $(OPTIM)), yes)
+ifneq ($(strip $(OPTIM)), no)
   CFLAGS += -O2
 endif
 
