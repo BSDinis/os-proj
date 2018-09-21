@@ -15,7 +15,7 @@ ifneq ($(strip $(DEBUG)), no)
   CFLAGS += -g
 endif
 
-ifneq ($(strip $(OPTIM)), yes)
+ifneq ($(strip $(OPTIM)), no)
   CFLAGS += -O2
 endif
 
