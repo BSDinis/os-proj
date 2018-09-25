@@ -64,6 +64,11 @@
 #include "lib/types.h"
 #include "lib/vector.h"
 
+/* filename where to output grid in maze_checkPaths */
+#ifdef OUT_FILENAME
+#undef OUT_FILENAME
+#endif
+#define OUT_FILENAME "out.txt"
 
 /* =============================================================================
  * maze_alloc
@@ -371,8 +376,7 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
    }
 
    /* output grid to a file */
-   const char *filename = "out.txt";
-   FILE *out_file = fopen(filename, "w");
+   FILE *out_file = fopen(OUT_FILENAME, "w");
    if (out_file) {
      grid_print_to_file(testGridPtr, out_file);
      fclose(out_file);
