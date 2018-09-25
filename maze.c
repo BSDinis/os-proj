@@ -370,6 +370,17 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
        grid_print(testGridPtr);
    }
 
+   /* output grid to a file */
+   const char *filename = "out.txt";
+   FILE *out_file = fopen(filename, "w");
+   if (out_file) {
+     grid_print_to_file(testGridPtr, out_file);
+     fclose(out_file);
+   }
+   else {
+     perror("maze_checkPaths: fopen");
+   }
+   
    grid_free(testGridPtr);
 
    return TRUE;
