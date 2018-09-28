@@ -55,7 +55,7 @@ CircuitRouter-SeqSolver: $(OBJECTS)
 .PHONY: clean
 clean:
 	@rm -f $(OBJECTS) $(TARGETS) autodep
-	@make clean -C lib
+	@make clean -C ../lib
 
 # get dependencies
 .PHONY: depend
