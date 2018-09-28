@@ -2,14 +2,14 @@
 
 CC := gcc
 
-INCLUDES := -I. -Ilib
+INCLUDES := -Ilib
 
 # vpath: tells where to search for files
 VPATH := .
 
 # fdiagnostics... make the output colorized
 CFLAGS := -Wall -Werror -fdiagnostics-color=always $(INCLUDES)
-LDFLAGS := -L -Wall -Werror -fdiagnostics-color=always $(INCLUDES) 
+LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES) 
 LDLIBS := -lpthread -lm # link pthreads and math functs
 LDFLAGS += -L./lib # search the lib dir for libraries
 LDLIBS += -lutils # link the utils library
