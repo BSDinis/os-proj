@@ -28,7 +28,7 @@ libutils.a: $(OBJECTS)
 
 .PHONY: clean
 clean:
-	@rm -f $(OBJECTS) $(TARGETS)
+	@rm -f $(OBJECTS) $(TARGETS) autodep
 
 .PHONY: depend
 depend: $(SOURCES)
