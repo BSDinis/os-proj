@@ -58,6 +58,7 @@
 #include "lib/types.h"
 #include "lib/vector.h"
 
+#include <stdio.h>
 
 typedef struct grid {
     long width;
@@ -158,10 +159,16 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr);
 
 
 /* =============================================================================
- * grid_print
+ * grid_print (derived from grid print to file)
  * =============================================================================
  */
 void grid_print (grid_t* gridPtr);
+
+/* =============================================================================
+ * grid_print_to_file
+ * =============================================================================
+ */
+void grid_print_to_file (grid_t* gridPtr, FILE *stream);
 
 
 #endif /* GRID_H */

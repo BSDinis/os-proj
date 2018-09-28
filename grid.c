@@ -53,7 +53,6 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include "coordinate.h"
 #include "grid.h"
@@ -230,17 +229,28 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
  * =============================================================================
  */
 void grid_print (grid_t* gridPtr){
+    grid_print_to_file(gridPtr, stdout);
+}
+
+
+/* =============================================================================
+ * grid_print
+ * =============================================================================
+ */
+void grid_print_to_file (grid_t* gridPtr, FILE *stream){
     assert(gridPtr);
+    assert(stream);
     for (int k = 0; k < gridPtr->depth; k++) {
-      	printf("[z = %u]\n", k);
+      	fprintf(stream, "[z = %u]\n", k);
       	for (int j = 0; j < gridPtr->height; j++) {
           	for (int i = 0; i < gridPtr->width; i++) {
               	const long point = grid_getPoint(gridPtr, i, j, k);
-                printf("%2li ", point);
+                fprintf(stream, "%2li ", point);
             }
-            putchar('\n');
+            fputc('\n', stream);
         }
     }
+    fflush(stream);
 }
 
 
