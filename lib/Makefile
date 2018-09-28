@@ -5,7 +5,7 @@ INCLUDES := -I.
 VPATH := .
 
 CFLAGS := -Wall -Werror -fdiagnostics-color=always $(INCLUDES)
-LDFLAGS := -L -Wall -Werror -fdiagnostics-color=always $(INCLUDES)
+LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES)
 
 ifneq ($(strip $(DEBUG)), no)
   CFLAGS += -g
