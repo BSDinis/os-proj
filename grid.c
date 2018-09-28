@@ -234,7 +234,7 @@ void grid_print (grid_t* gridPtr){
 
 
 /* =============================================================================
- * grid_print
+ * grid_print_to_file
  * =============================================================================
  */
 void grid_print_to_file (grid_t* gridPtr, FILE *stream){
