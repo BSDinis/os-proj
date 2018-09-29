@@ -2,16 +2,16 @@
 
 CC := gcc
 
-INCLUDES := -Ilib
+INCLUDES := -I.. 
 
 # vpath: tells where to search for files
-VPATH := .
+VPATH := .:..
 
 # fdiagnostics... make the output colorized
 CFLAGS := -Wall -Werror -fdiagnostics-color=always $(INCLUDES)
 LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES) 
 LDLIBS := -lpthread -lm # link pthreads and math functs
-LDFLAGS += -L./lib # search the lib dir for libraries
+LDFLAGS += -L.. -L../lib # search the lib dir for libraries
 LDLIBS += -lutils # link the utils library
 
 # if you run 'make DEBUG=no' it will compile without the debugger flag
@@ -42,7 +42,7 @@ all: depend utils $(TARGETS)
 # create static lib
 # -C means it goes into the lib dir and runs make
 utils:
-	@make -C lib
+	@make -C ../lib
 
 # create executable
 CircuitRouter-SeqSolver: $(OBJECTS) 
@@ -54,8 +54,8 @@ CircuitRouter-SeqSolver: $(OBJECTS)
 # the -f flag supresses outpu if there are no files
 .PHONY: clean
 clean:
-	@rm -f $(OBJECTS) $(TARGETS)
-	@make clean -C lib
+	@rm -f $(OBJECTS) $(TARGETS) autodep
+	@make clean -C ../lib
 
 # get dependencies
 .PHONY: depend
