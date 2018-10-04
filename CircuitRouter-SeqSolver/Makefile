@@ -8,7 +8,7 @@ INCLUDES := -I..
 VPATH := .:..
 
 # fdiagnostics... make the output colorized
-CFLAGS := -Wall -Werror -fdiagnostics-color=always $(INCLUDES)
+CFLAGS := -Wall -Werror -Wno-error=stringop-overflow= -std=gnu99 -fdiagnostics-color=always $(INCLUDES)
 LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES) 
 LDLIBS := -lpthread -lm # link pthreads and math functs
 LDFLAGS += -L.. -L../lib # search the lib dir for libraries
@@ -54,7 +54,7 @@ CircuitRouter-SeqSolver: $(OBJECTS)
 # the -f flag supresses outpu if there are no files
 .PHONY: clean
 clean:
-	@rm -f $(OBJECTS) $(TARGETS) autodep
+	@rm -f $(OBJECTS) $(TARGETS) autodep vgcore*
 	@make clean -C ../lib
 
 # get dependencies

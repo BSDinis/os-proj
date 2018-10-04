@@ -55,6 +55,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "lib/list.h"
 #include "maze.h"
@@ -155,6 +156,38 @@ static void parseArgs (long argc, char* const argv[]){
     }
 }
 
+/* =============================================================================
+ * open_out_stream
+ * =============================================================================
+ */
+FILE * open_out_stream(const char * const input_filename) 
+{
+    FILE *fp;
+    size_t input_len = strlen(input_filename);
+    char * out_filename = malloc((input_len + 4 + 1) * sizeof(char));
+    strncpy(out_filename, input_filename, input_len + 1);
+    strcat(out_filename, ".res");
+    fp = fopen(out_filename, "r");
+
+    if (fp != NULL) {
+        // renaming .res to .res.old
+        fclose(fp);
+        char * old_filename = malloc((input_len + 8 + 1) * sizeof(char));
+        strncpy(old_filename, out_filename, input_len + 4 + 1);
+        strcat(old_filename, ".old");
+        rename(out_filename, old_filename);
+        free(old_filename);
+    }
+
+    fp = fopen(out_filename, "w");
+    free(out_filename);
+    if (fp == NULL) {
+        perror("open_out_stream: fopen");
+        exit(1);
+    }
+    return fp;
+}
+
 
 /* =============================================================================
  * main
@@ -168,7 +201,8 @@ int main(int argc, char** argv){
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
 
-    long numPathToRoute = maze_read(mazePtr, global_inputFile);
+    FILE * out_stream = open_out_stream(global_inputFile);
+    long numPathToRoute = maze_read(mazePtr, global_inputFile, out_stream);
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],
@@ -193,17 +227,18 @@ int main(int argc, char** argv){
         vector_t* pathVectorPtr = (vector_t*)list_iter_next(&it, pathVectorListPtr);
         numPathRouted += vector_getSize(pathVectorPtr);
 	}
-    printf("Paths routed    = %li\n", numPathRouted);
-    printf("Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
+    fprintf(out_stream, "Paths routed    = %li\n", numPathRouted);
+    fprintf(out_stream, "Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
 
 
     /*
      * Check solution and clean up
      */
     assert(numPathRouted <= numPathToRoute);
-    bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, global_doPrint);
+    bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, global_doPrint, out_stream);
     assert(status == TRUE);
-    puts("Verification passed.");
+    fputs("Verification passed.", out_stream);
+    fclose(out_stream);
 
     maze_free(mazePtr);
     router_free(routerPtr);
