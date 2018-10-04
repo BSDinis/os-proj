@@ -158,7 +158,7 @@ static void addToGrid (grid_t* gridPtr, vector_t* vectorPtr, char* type){
  * =============================================================================
  */
 
-long maze_read (maze_t* mazePtr){
+long maze_read (maze_t* mazePtr, const char * const input_filename){
    
    /*
     * Parse input from stdin
@@ -167,13 +167,22 @@ long maze_read (maze_t* mazePtr){
    long height = -1;
    long width  = -1;
    long depth  = -1;
+   FILE *input_stream = NULL;
    char line[256];
    list_t* workListPtr = list_alloc(&coordinate_comparePair);
    vector_t* wallVectorPtr = mazePtr->wallVectorPtr;
    vector_t* srcVectorPtr = mazePtr->srcVectorPtr;
    vector_t* dstVectorPtr = mazePtr->dstVectorPtr;
    
-   while (fgets(line, sizeof(line), stdin)) {
+   assert(input_filename);
+   input_stream = fopen(input_filename, "r");
+   if (!input_stream) {
+       fprintf(stderr, "Error: failed to open input stream (filename %s)", 
+           input_filename);
+       exit(1);
+   }
+   
+   while (fgets(line, sizeof(line), input_stream)) {
        
        char code;
        long x1, y1, z1;
@@ -240,6 +249,7 @@ long maze_read (maze_t* mazePtr){
                        lineNumber);
                exit(1);
            }
+
        }
        
    } /* iterate over lines in input file */

@@ -86,14 +86,13 @@ long global_params[256]; /* 256 = ascii limit */
  * =============================================================================
  */
 static void displayUsage (const char* appName){
-    printf("Usage: %s [options]\n", appName);
-    puts("\nOptions:                            (defaults)\n");
-    printf("    b <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
-    printf("    p          [p]rint routed maze  (false)\n");
-    printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
-    printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
-    printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
-    printf("    h          [h]elp message       (false)\n");
+    printf("Usage: %s [options] <filename>\n", appName);
+    puts("\nOptions:                                        (defaults)\n");
+    printf("    b             <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
+    printf("    x             <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
+    printf("    y             <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
+    printf("    z             <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
+    printf("    h                      [h]elp message       (false)\n");
     exit(1);
 }
 
@@ -117,12 +116,12 @@ static void setDefaultParams (){
 static void parseArgs (long argc, char* const argv[]){
     long i;
     long opt;
-
+    FILE *fp = NULL;
     opterr = 0;
 
     setDefaultParams();
 
-    while ((opt = getopt(argc, argv, "hb:px:y:z:")) != -1) {
+    while ((opt = getopt(argc, argv, "hb:x:y:z:")) != -1) {
         switch (opt) {
             case 'b':
             case 'x':
@@ -130,23 +129,28 @@ static void parseArgs (long argc, char* const argv[]){
             case 'z':
                 global_params[(unsigned char)opt] = atol(optarg);
                 break;
-            case 'p':
-                global_doPrint = TRUE;
-                break;
             case '?':
             case 'h':
             default:
-                opterr++;
                 break;
         }
     }
 
     for (i = optind; i < argc; i++) {
-        fprintf(stderr, "Non-option argument: %s\n", argv[i]);
-        opterr++;
+        if (!global_inputFile) {
+            fp = fopen(argv[i], "r");
+            if (fp == NULL) {
+                fprintf(stderr, "Non-option argument: %s\n", argv[i]);
+                opterr++;
+            }
+            else {
+                fclose(fp);
+                global_inputFile = argv[i];
+            }
+        }
     }
 
-    if (opterr) {
+    if (opterr || !global_inputFile) {
         displayUsage(argv[0]);
     }
 }
@@ -164,7 +168,7 @@ int main(int argc, char** argv){
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
 
-    long numPathToRoute = maze_read(mazePtr);
+    long numPathToRoute = maze_read(mazePtr, global_inputFile);
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],
