@@ -4,8 +4,8 @@
  *
  * The original copyright notice is included below.
  *
-  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Copyright (C) Stanford University, 2006.  All Rights Reserved.
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Copyright (C) Stanford University, 2006. All Rights Reserved.
  * Author: Chi Cao Minh
  *
  * =============================================================================
@@ -19,17 +19,17 @@
  * modification, are permitted provided that the following conditions are
  * met:
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
+ *   * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
  *
- *     * Neither the name of Stanford University nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *   * Neither the name of Stanford University nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY STANFORD UNIVERSITY ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -60,16 +60,16 @@
 #include "lib/vector.h"
 
 typedef struct router {
-    long xCost;
-    long yCost;
-    long zCost;
-    long bendCost;
+  long xCost;
+  long yCost;
+  long zCost;
+  long bendCost;
 } router_t;
 
 typedef struct router_solve_arg {
-    router_t* routerPtr;
-    maze_t* mazePtr;
-    list_t* pathVectorListPtr;
+  router_t* routerPtr;
+  maze_t* mazePtr;
+  list_t* pathVectorListPtr;
 } router_solve_arg_t;
 
 

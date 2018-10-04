@@ -16,12 +16,12 @@ LDLIBS += -lutils # link the utils library
 
 # if you run 'make DEBUG=no' it will compile without the debugger flag
 ifneq ($(strip $(DEBUG)), no)
-  CFLAGS += -g
+ CFLAGS += -g
 endif
 
 # if you run 'make OPTIM=no' it will compile without the optimizations
 ifneq ($(strip $(OPTIM)), no)
-  CFLAGS += -O2
+ CFLAGS += -O2
 endif
 
 # SOURCES is a list of all the files in the current dir with a .c extension

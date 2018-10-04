@@ -4,8 +4,8 @@
  *
  * The original copyright notice is included below.
  *
-  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Copyright (C) Stanford University, 2006.  All Rights Reserved.
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Copyright (C) Stanford University, 2006. All Rights Reserved.
  * Author: Chi Cao Minh
  *
  * =============================================================================
@@ -19,17 +19,17 @@
  * modification, are permitted provided that the following conditions are
  * met:
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
+ *   * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
  *
- *     * Neither the name of Stanford University nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *   * Neither the name of Stanford University nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY STANFORD UNIVERSITY ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -64,16 +64,16 @@
  * =============================================================================
  */
 coordinate_t* coordinate_alloc (long x, long y, long z){
-    coordinate_t* coordinatePtr;
+  coordinate_t* coordinatePtr;
 
-    coordinatePtr = (coordinate_t*)malloc(sizeof(coordinate_t));
-    if (coordinatePtr) {
-        coordinatePtr->x = x;
-        coordinatePtr->y = y;
-        coordinatePtr->z = z;
-    }
+  coordinatePtr = (coordinate_t*)malloc(sizeof(coordinate_t));
+  if (coordinatePtr) {
+    coordinatePtr->x = x;
+    coordinatePtr->y = y;
+    coordinatePtr->z = z;
+  }
 
-    return coordinatePtr;
+  return coordinatePtr;
 }
 
 
@@ -82,7 +82,7 @@ coordinate_t* coordinate_alloc (long x, long y, long z){
  * =============================================================================
  */
 void coordinate_free (coordinate_t* coordinatePtr){
-    free(coordinatePtr);
+  free(coordinatePtr);
 }
 
 
@@ -91,14 +91,14 @@ void coordinate_free (coordinate_t* coordinatePtr){
  * =============================================================================
  */
 bool_t coordinate_isEqual (coordinate_t* aPtr, coordinate_t* bPtr){
-    if ((aPtr->x == bPtr->x) &&
-        (aPtr->y == bPtr->y) &&
-        (aPtr->z == bPtr->z))
-    {
-        return TRUE;
-    }
+  if ((aPtr->x == bPtr->x) &&
+    (aPtr->y == bPtr->y) &&
+    (aPtr->z == bPtr->z))
+  {
+    return TRUE;
+  }
 
-    return FALSE;
+  return FALSE;
 }
 
 
@@ -107,15 +107,15 @@ bool_t coordinate_isEqual (coordinate_t* aPtr, coordinate_t* bPtr){
  * =============================================================================
  */
 static double getPairDistance (pair_t* pairPtr){
-    coordinate_t* aPtr = (coordinate_t*)pairPtr->firstPtr;
-    coordinate_t* bPtr = (coordinate_t*)pairPtr->secondPtr;
-    long dx = aPtr->x - bPtr->x;
-    long dy = aPtr->y - bPtr->y;
-    long dz = aPtr->z - bPtr->z;
-    long dx2 = dx * dx;
-    long dy2 = dy * dy;
-    long dz2 = dz * dz;
-    return sqrt((double)(dx2 + dy2 + dz2));
+  coordinate_t* aPtr = (coordinate_t*)pairPtr->firstPtr;
+  coordinate_t* bPtr = (coordinate_t*)pairPtr->secondPtr;
+  long dx = aPtr->x - bPtr->x;
+  long dy = aPtr->y - bPtr->y;
+  long dz = aPtr->z - bPtr->z;
+  long dx2 = dx * dx;
+  long dy2 = dy * dy;
+  long dz2 = dz * dz;
+  return sqrt((double)(dx2 + dy2 + dz2));
 }
 
 
@@ -126,16 +126,16 @@ static double getPairDistance (pair_t* pairPtr){
  * =============================================================================
  */
 long coordinate_comparePair (const void* aPtr, const void* bPtr){
-    double aDistance = getPairDistance((pair_t*)aPtr);
-    double bDistance = getPairDistance((pair_t*)bPtr);
+  double aDistance = getPairDistance((pair_t*)aPtr);
+  double bDistance = getPairDistance((pair_t*)bPtr);
 
-    if (aDistance < bDistance) {
-        return 1;
-    } else if (aDistance > bDistance) {
-        return -1;
-    }
+  if (aDistance < bDistance) {
+    return 1;
+  } else if (aDistance > bDistance) {
+    return -1;
+  }
 
-    return 0;
+  return 0;
 }
 
 
@@ -144,14 +144,14 @@ long coordinate_comparePair (const void* aPtr, const void* bPtr){
  * =============================================================================
  */
 bool_t coordinate_areAdjacent (coordinate_t* aPtr, coordinate_t* bPtr){
-    long dx = aPtr->x - bPtr->x;
-    long dy = aPtr->y - bPtr->y;
-    long dz = aPtr->z - bPtr->z;
-    long dx2 = dx * dx;
-    long dy2 = dy * dy;
-    long dz2 = dz * dz;
+  long dx = aPtr->x - bPtr->x;
+  long dy = aPtr->y - bPtr->y;
+  long dz = aPtr->z - bPtr->z;
+  long dx2 = dx * dx;
+  long dy2 = dy * dy;
+  long dz2 = dz * dz;
 
-    return (((dx2 + dy2 + dz2) == 1) ? TRUE : FALSE);
+  return (((dx2 + dy2 + dz2) == 1) ? TRUE : FALSE);
 }
 
 
