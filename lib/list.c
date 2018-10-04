@@ -6,7 +6,7 @@
  *
  * =============================================================================
  *
- * Copyright (C) Stanford University, 2006.  All Rights Reserved.
+ * Copyright (C) Stanford University, 2006. All Rights Reserved.
  * Author: Chi Cao Minh
  *
  * =============================================================================
@@ -43,17 +43,17 @@
  * modification, are permitted provided that the following conditions are
  * met:
  * 
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
+ *   * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  * 
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
  * 
- *     * Neither the name of Stanford University nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *   * Neither the name of Stanford University nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY STANFORD UNIVERSITY ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -85,7 +85,7 @@
 static long
 compareDataPtrAddresses (const void* a, const void* b)
 {
-    return ((long)a - (long)b);
+  return ((long)a - (long)b);
 }
 
 
@@ -96,7 +96,7 @@ compareDataPtrAddresses (const void* a, const void* b)
 void
 list_iter_reset (list_iter_t* itPtr, list_t* listPtr)
 {
-    *itPtr = &(listPtr->head);
+  *itPtr = &(listPtr->head);
 }
 
 
@@ -107,7 +107,7 @@ list_iter_reset (list_iter_t* itPtr, list_t* listPtr)
 bool_t
 list_iter_hasNext (list_iter_t* itPtr, list_t* listPtr)
 {
-    return (((*itPtr)->nextPtr != NULL) ? TRUE : FALSE);
+  return (((*itPtr)->nextPtr != NULL) ? TRUE : FALSE);
 }
 
 
@@ -118,9 +118,9 @@ list_iter_hasNext (list_iter_t* itPtr, list_t* listPtr)
 void*
 list_iter_next (list_iter_t* itPtr, list_t* listPtr)
 {
-    *itPtr = (*itPtr)->nextPtr;
+  *itPtr = (*itPtr)->nextPtr;
 
-    return (*itPtr)->dataPtr;
+  return (*itPtr)->dataPtr;
 }
 
 
@@ -132,15 +132,15 @@ list_iter_next (list_iter_t* itPtr, list_t* listPtr)
 static list_node_t*
 allocNode (void* dataPtr)
 {
-    list_node_t* nodePtr = (list_node_t*)malloc(sizeof(list_node_t));
-    if (nodePtr == NULL) {
-        return NULL;
-    }
+  list_node_t* nodePtr = (list_node_t*)malloc(sizeof(list_node_t));
+  if (nodePtr == NULL) {
+    return NULL;
+  }
 
-    nodePtr->dataPtr = dataPtr;
-    nodePtr->nextPtr = NULL;
+  nodePtr->dataPtr = dataPtr;
+  nodePtr->nextPtr = NULL;
 
-    return nodePtr;
+  return nodePtr;
 }
 
 
@@ -153,22 +153,22 @@ allocNode (void* dataPtr)
 list_t*
 list_alloc (long (*compare)(const void*, const void*))
 {
-    list_t* listPtr = (list_t*)malloc(sizeof(list_t));
-    if (listPtr == NULL) {
-        return NULL;
-    }
+  list_t* listPtr = (list_t*)malloc(sizeof(list_t));
+  if (listPtr == NULL) {
+    return NULL;
+  }
 
-    listPtr->head.dataPtr = NULL;
-    listPtr->head.nextPtr = NULL;
-    listPtr->size = 0;
+  listPtr->head.dataPtr = NULL;
+  listPtr->head.nextPtr = NULL;
+  listPtr->size = 0;
 
-    if (compare == NULL) {
-        listPtr->compare = &compareDataPtrAddresses; /* default */
-    } else {
-        listPtr->compare = compare;
-    }
+  if (compare == NULL) {
+    listPtr->compare = &compareDataPtrAddresses; /* default */
+  } else {
+    listPtr->compare = compare;
+  }
 
-    return listPtr;
+  return listPtr;
 }
 
 
@@ -179,7 +179,7 @@ list_alloc (long (*compare)(const void*, const void*))
 static void
 freeNode (list_node_t* nodePtr)
 {
-    free(nodePtr);
+  free(nodePtr);
 }
 
 
@@ -190,10 +190,10 @@ freeNode (list_node_t* nodePtr)
 static void
 freeList (list_node_t* nodePtr)
 {
-    if (nodePtr != NULL) {
-        freeList(nodePtr->nextPtr);
-        freeNode(nodePtr);
-    }
+  if (nodePtr != NULL) {
+    freeList(nodePtr->nextPtr);
+    freeNode(nodePtr);
+  }
 }
 
 
@@ -204,8 +204,8 @@ freeList (list_node_t* nodePtr)
 void
 list_free (list_t* listPtr)
 {
-    freeList(listPtr->head.nextPtr);
-    free(listPtr);
+  freeList(listPtr->head.nextPtr);
+  free(listPtr);
 }
 
 
@@ -217,7 +217,7 @@ list_free (list_t* listPtr)
 bool_t
 list_isEmpty (list_t* listPtr)
 {
-    return (listPtr->head.nextPtr == NULL);
+  return (listPtr->head.nextPtr == NULL);
 }
 
 
@@ -229,7 +229,7 @@ list_isEmpty (list_t* listPtr)
 long
 list_getSize (list_t* listPtr)
 {
-    return listPtr->size;
+  return listPtr->size;
 }
 
 
@@ -240,17 +240,17 @@ list_getSize (list_t* listPtr)
 static list_node_t*
 findPrevious (list_t* listPtr, void* dataPtr)
 {
-    list_node_t* prevPtr = &(listPtr->head);
-    list_node_t* nodePtr = prevPtr->nextPtr;
+  list_node_t* prevPtr = &(listPtr->head);
+  list_node_t* nodePtr = prevPtr->nextPtr;
 
-    for (; nodePtr != NULL; nodePtr = nodePtr->nextPtr) {
-        if (listPtr->compare(nodePtr->dataPtr, dataPtr) >= 0) {
-            return prevPtr;
-        }
-        prevPtr = nodePtr;
+  for (; nodePtr != NULL; nodePtr = nodePtr->nextPtr) {
+    if (listPtr->compare(nodePtr->dataPtr, dataPtr) >= 0) {
+      return prevPtr;
     }
+    prevPtr = nodePtr;
+  }
 
-    return prevPtr;
+  return prevPtr;
 }
 
 
@@ -262,17 +262,17 @@ findPrevious (list_t* listPtr, void* dataPtr)
 void*
 list_find (list_t* listPtr, void* dataPtr)
 {
-    list_node_t* nodePtr;
-    list_node_t* prevPtr = findPrevious(listPtr, dataPtr);
+  list_node_t* nodePtr;
+  list_node_t* prevPtr = findPrevious(listPtr, dataPtr);
 
-    nodePtr = prevPtr->nextPtr;
+  nodePtr = prevPtr->nextPtr;
 
-    if ((nodePtr == NULL) ||
-        (listPtr->compare(nodePtr->dataPtr, dataPtr) != 0)) {
-        return NULL;
-    }
+  if ((nodePtr == NULL) ||
+    (listPtr->compare(nodePtr->dataPtr, dataPtr) != 0)) {
+    return NULL;
+  }
 
-    return (nodePtr->dataPtr);
+  return (nodePtr->dataPtr);
 }
 
 
@@ -284,30 +284,30 @@ list_find (list_t* listPtr, void* dataPtr)
 bool_t
 list_insert (list_t* listPtr, void* dataPtr)
 {
-    list_node_t* prevPtr;
-    list_node_t* nodePtr;
-    list_node_t* currPtr;
+  list_node_t* prevPtr;
+  list_node_t* nodePtr;
+  list_node_t* currPtr;
 
-    prevPtr = findPrevious(listPtr, dataPtr);
-    currPtr = prevPtr->nextPtr;
+  prevPtr = findPrevious(listPtr, dataPtr);
+  currPtr = prevPtr->nextPtr;
 
 #ifdef LIST_NO_DUPLICATES
-    if ((currPtr != NULL) &&
-        listPtr->compare(currPtr->dataPtr, dataPtr) == 0) {
-        return FALSE;
-    }
+  if ((currPtr != NULL) &&
+    listPtr->compare(currPtr->dataPtr, dataPtr) == 0) {
+    return FALSE;
+  }
 #endif
 
-    nodePtr = allocNode(dataPtr);
-    if (nodePtr == NULL) {
-        return FALSE;
-    }
+  nodePtr = allocNode(dataPtr);
+  if (nodePtr == NULL) {
+    return FALSE;
+  }
 
-    nodePtr->nextPtr = currPtr;
-    prevPtr->nextPtr = nodePtr;
-    listPtr->size++;
+  nodePtr->nextPtr = currPtr;
+  prevPtr->nextPtr = nodePtr;
+  listPtr->size++;
 
-    return TRUE;
+  return TRUE;
 }
 
 
@@ -319,24 +319,24 @@ list_insert (list_t* listPtr, void* dataPtr)
 bool_t
 list_remove (list_t* listPtr, void* dataPtr)
 {
-    list_node_t* prevPtr;
-    list_node_t* nodePtr;
+  list_node_t* prevPtr;
+  list_node_t* nodePtr;
 
-    prevPtr = findPrevious(listPtr, dataPtr);
+  prevPtr = findPrevious(listPtr, dataPtr);
 
-    nodePtr = prevPtr->nextPtr;
-    if ((nodePtr != NULL) &&
-        (listPtr->compare(nodePtr->dataPtr, dataPtr) == 0))
-    {
-        prevPtr->nextPtr = nodePtr->nextPtr;
-        nodePtr->nextPtr = NULL;
-        freeNode(nodePtr);
-        listPtr->size--;
-        assert(listPtr->size >= 0);
-        return TRUE;
-    }
+  nodePtr = prevPtr->nextPtr;
+  if ((nodePtr != NULL) &&
+    (listPtr->compare(nodePtr->dataPtr, dataPtr) == 0))
+  {
+    prevPtr->nextPtr = nodePtr->nextPtr;
+    nodePtr->nextPtr = NULL;
+    freeNode(nodePtr);
+    listPtr->size--;
+    assert(listPtr->size >= 0);
+    return TRUE;
+  }
 
-    return FALSE;
+  return FALSE;
 }
 
 
@@ -348,9 +348,9 @@ list_remove (list_t* listPtr, void* dataPtr)
 void
 list_clear (list_t* listPtr)
 {
-    freeList(listPtr->head.nextPtr);
-    listPtr->head.nextPtr = NULL;
-    listPtr->size = 0;
+  freeList(listPtr->head.nextPtr);
+  listPtr->head.nextPtr = NULL;
+  listPtr->size = 0;
 }
 
 
@@ -368,90 +368,90 @@ list_clear (list_t* listPtr)
 static long
 compare (const void* a, const void* b)
 {
-    return (*((const long*)a) - *((const long*)b));
+  return (*((const long*)a) - *((const long*)b));
 }
 
 
 static void
 printList (list_t* listPtr)
 {
-    list_iter_t it;
-    printf("[");
-    list_iter_reset(&it, listPtr);
-    while (list_iter_hasNext(&it, listPtr)) {
-        printf("%li ", *((long*)(list_iter_next(&it, listPtr))));
-    }
-    puts("]");
+  list_iter_t it;
+  printf("[");
+  list_iter_reset(&it, listPtr);
+  while (list_iter_hasNext(&it, listPtr)) {
+    printf("%li ", *((long*)(list_iter_next(&it, listPtr))));
+  }
+  puts("]");
 }
 
 
 static void
 insertInt (list_t* listPtr, long* data)
 {
-    printf("Inserting: %li\n", *data);
-    list_insert(listPtr, (void*)data);
-    printList(listPtr);
+  printf("Inserting: %li\n", *data);
+  list_insert(listPtr, (void*)data);
+  printList(listPtr);
 }
 
 
 static void
 removeInt (list_t* listPtr, long* data)
 {
-    printf("Removing: %li\n", *data);
-    list_remove(listPtr, (void*)data);
-    printList(listPtr);
+  printf("Removing: %li\n", *data);
+  list_remove(listPtr, (void*)data);
+  printList(listPtr);
 }
 
 
 int
 main ()
 {
-    list_t* listPtr;
+  list_t* listPtr;
 #ifdef LIST_NO_DUPLICATES
-    long data1[] = {3, 1, 4, 1, 5, -1};
+  long data1[] = {3, 1, 4, 1, 5, -1};
 #else
-    long data1[] = {3, 1, 4, 5, -1};
+  long data1[] = {3, 1, 4, 5, -1};
 #endif
-    long data2[] = {3, 1, 4, 1, 5, -1};
-    long i;
+  long data2[] = {3, 1, 4, 1, 5, -1};
+  long i;
 
-    puts("Starting...");
+  puts("Starting...");
 
-    puts("List sorted by values:");
+  puts("List sorted by values:");
 
-    listPtr = list_alloc(&compare);
+  listPtr = list_alloc(&compare);
 
-    for (i = 0; data1[i] >= 0; i++) {
-        insertInt(listPtr, &data1[i]);
-        assert(*((long*)list_find(listPtr, &data1[i])) == data1[i]);
-    }
+  for (i = 0; data1[i] >= 0; i++) {
+    insertInt(listPtr, &data1[i]);
+    assert(*((long*)list_find(listPtr, &data1[i])) == data1[i]);
+  }
 
-    for (i = 0; data1[i] >= 0; i++) {
-        removeInt(listPtr, &data1[i]);
-        assert(list_find(listPtr, &data1[i]) == NULL);
-    }
+  for (i = 0; data1[i] >= 0; i++) {
+    removeInt(listPtr, &data1[i]);
+    assert(list_find(listPtr, &data1[i]) == NULL);
+  }
 
-    list_free(listPtr);
+  list_free(listPtr);
 
-    puts("List sorted by addresses:");
+  puts("List sorted by addresses:");
 
-    listPtr = list_alloc(NULL);
+  listPtr = list_alloc(NULL);
 
-    for (i = 0; data2[i] >= 0; i++) {
-        insertInt(listPtr, &data2[i]);
-        assert(*((long*)list_find(listPtr, &data2[i])) == data2[i]);
-    }
+  for (i = 0; data2[i] >= 0; i++) {
+    insertInt(listPtr, &data2[i]);
+    assert(*((long*)list_find(listPtr, &data2[i])) == data2[i]);
+  }
 
-    for (i = 0; data2[i] >= 0; i++) {
-        removeInt(listPtr, &data2[i]);
-        assert(list_find(listPtr, &data2[i]) == NULL);
-    }
+  for (i = 0; data2[i] >= 0; i++) {
+    removeInt(listPtr, &data2[i]);
+    assert(list_find(listPtr, &data2[i]) == NULL);
+  }
 
-    list_free(listPtr);
+  list_free(listPtr);
 
-    puts("Done.");
+  puts("Done.");
 
-    return 0;
+  return 0;
 }
 
 

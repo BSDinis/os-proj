@@ -4,7 +4,7 @@
  *
  * =============================================================================
  *
- * Copyright (C) Stanford University, 2006.  All Rights Reserved.
+ * Copyright (C) Stanford University, 2006. All Rights Reserved.
  * Author: Chi Cao Minh
  *
  * =============================================================================
@@ -41,17 +41,17 @@
  * modification, are permitted provided that the following conditions are
  * met:
  * 
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
+ *   * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  * 
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
  * 
- *     * Neither the name of Stanford University nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *   * Neither the name of Stanford University nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY STANFORD UNIVERSITY ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -77,14 +77,14 @@
 
 
 struct queue {
-    long pop; /* points before element to pop */
-    long push;
-    long capacity;
-    void** elements;
+  long pop; /* points before element to pop */
+  long push;
+  long capacity;
+  void** elements;
 };
 
 enum config {
-    QUEUE_GROWTH_FACTOR = 2,
+  QUEUE_GROWTH_FACTOR = 2,
 };
 
 
@@ -95,21 +95,21 @@ enum config {
 queue_t*
 queue_alloc (long initCapacity)
 {
-    queue_t* queuePtr = (queue_t*)malloc(sizeof(queue_t));
+  queue_t* queuePtr = (queue_t*)malloc(sizeof(queue_t));
 
-    if (queuePtr) {
-        long capacity = ((initCapacity < 2) ? 2 : initCapacity);
-        queuePtr->elements = (void**)malloc(capacity * sizeof(void*));
-        if (queuePtr->elements == NULL) {
-            free(queuePtr);
-            return NULL;
-        }
-        queuePtr->pop      = capacity - 1;
-        queuePtr->push     = 0;
-        queuePtr->capacity = capacity;
+  if (queuePtr) {
+    long capacity = ((initCapacity < 2) ? 2 : initCapacity);
+    queuePtr->elements = (void**)malloc(capacity * sizeof(void*));
+    if (queuePtr->elements == NULL) {
+      free(queuePtr);
+      return NULL;
     }
+    queuePtr->pop   = capacity - 1;
+    queuePtr->push   = 0;
+    queuePtr->capacity = capacity;
+  }
 
-    return queuePtr;
+  return queuePtr;
 }
 
 
@@ -120,8 +120,8 @@ queue_alloc (long initCapacity)
 void
 queue_free (queue_t* queuePtr)
 {
-    free(queuePtr->elements);
-    free(queuePtr);
+  free(queuePtr->elements);
+  free(queuePtr);
 }
 
 
@@ -132,11 +132,11 @@ queue_free (queue_t* queuePtr)
 bool_t
 queue_isEmpty (queue_t* queuePtr)
 {
-    long pop      = queuePtr->pop;
-    long push     = queuePtr->push;
-    long capacity = queuePtr->capacity;
+  long pop   = queuePtr->pop;
+  long push   = queuePtr->push;
+  long capacity = queuePtr->capacity;
 
-    return (((pop + 1) % capacity == push) ? TRUE : FALSE);
+  return (((pop + 1) % capacity == push) ? TRUE : FALSE);
 }
 
 
@@ -147,8 +147,8 @@ queue_isEmpty (queue_t* queuePtr)
 void
 queue_clear (queue_t* queuePtr)
 {
-    queuePtr->pop  = queuePtr->capacity - 1;
-    queuePtr->push = 0;
+  queuePtr->pop = queuePtr->capacity - 1;
+  queuePtr->push = 0;
 }
 
 
@@ -159,51 +159,51 @@ queue_clear (queue_t* queuePtr)
 bool_t
 queue_push (queue_t* queuePtr, void* dataPtr)
 {
-    long pop      = queuePtr->pop;
-    long push     = queuePtr->push;
-    long capacity = queuePtr->capacity;
+  long pop   = queuePtr->pop;
+  long push   = queuePtr->push;
+  long capacity = queuePtr->capacity;
 
-    assert(pop != push);
+  assert(pop != push);
 
-    /* Need to resize */
-    long newPush = (push + 1) % capacity;
-    if (newPush == pop) {
+  /* Need to resize */
+  long newPush = (push + 1) % capacity;
+  if (newPush == pop) {
 
-        long newCapacity = capacity * QUEUE_GROWTH_FACTOR;
-        void** newElements = (void**)malloc(newCapacity * sizeof(void*));
-        if (newElements == NULL) {
-            return FALSE;
-        }
-
-        long dst = 0;
-        void** elements = queuePtr->elements;
-        if (pop < push) {
-            long src;
-            for (src = (pop + 1); src < push; src++, dst++) {
-                newElements[dst] = elements[src];
-            }
-        } else {
-            long src;
-            for (src = (pop + 1); src < capacity; src++, dst++) {
-                newElements[dst] = elements[src];
-            }
-            for (src = 0; src < push; src++, dst++) {
-                newElements[dst] = elements[src];
-            }
-        }
-
-        free(elements);
-        queuePtr->elements = newElements;
-        queuePtr->pop      = newCapacity - 1;
-        queuePtr->capacity = newCapacity;
-        push = dst;
-        newPush = push + 1; /* no need modulo */
+    long newCapacity = capacity * QUEUE_GROWTH_FACTOR;
+    void** newElements = (void**)malloc(newCapacity * sizeof(void*));
+    if (newElements == NULL) {
+      return FALSE;
     }
 
-    queuePtr->elements[push] = dataPtr;
-    queuePtr->push = newPush;
+    long dst = 0;
+    void** elements = queuePtr->elements;
+    if (pop < push) {
+      long src;
+      for (src = (pop + 1); src < push; src++, dst++) {
+        newElements[dst] = elements[src];
+      }
+    } else {
+      long src;
+      for (src = (pop + 1); src < capacity; src++, dst++) {
+        newElements[dst] = elements[src];
+      }
+      for (src = 0; src < push; src++, dst++) {
+        newElements[dst] = elements[src];
+      }
+    }
 
-    return TRUE;
+    free(elements);
+    queuePtr->elements = newElements;
+    queuePtr->pop   = newCapacity - 1;
+    queuePtr->capacity = newCapacity;
+    push = dst;
+    newPush = push + 1; /* no need modulo */
+  }
+
+  queuePtr->elements[push] = dataPtr;
+  queuePtr->push = newPush;
+
+  return TRUE;
 }
 
 
@@ -214,19 +214,19 @@ queue_push (queue_t* queuePtr, void* dataPtr)
 void*
 queue_pop (queue_t* queuePtr)
 {
-    long pop      = queuePtr->pop;
-    long push     = queuePtr->push;
-    long capacity = queuePtr->capacity;
+  long pop   = queuePtr->pop;
+  long push   = queuePtr->push;
+  long capacity = queuePtr->capacity;
 
-    long newPop = (pop + 1) % capacity;
-    if (newPop == push) {
-        return NULL;
-    }
+  long newPop = (pop + 1) % capacity;
+  if (newPop == push) {
+    return NULL;
+  }
 
-    void* dataPtr = queuePtr->elements[newPop];
-    queuePtr->pop = newPop;
+  void* dataPtr = queuePtr->elements[newPop];
+  queuePtr->pop = newPop;
 
-    return dataPtr;
+  return dataPtr;
 }
 
 
@@ -243,76 +243,76 @@ queue_pop (queue_t* queuePtr)
 static void
 printQueue (queue_t* queuePtr)
 {
-    long   push     = queuePtr->push;
-    long   pop      = queuePtr->pop;
-    long   capacity = queuePtr->capacity;
-    void** elements = queuePtr->elements;
+  long  push   = queuePtr->push;
+  long  pop   = queuePtr->pop;
+  long  capacity = queuePtr->capacity;
+  void** elements = queuePtr->elements;
 
-    printf("[");
+  printf("[");
 
-    long i;
-    for (i = ((pop + 1) % capacity); i != push; i = ((i + 1) % capacity)) {
-        printf("%li ", *(long*)elements[i]);
-    }
-    puts("]");
+  long i;
+  for (i = ((pop + 1) % capacity); i != push; i = ((i + 1) % capacity)) {
+    printf("%li ", *(long*)elements[i]);
+  }
+  puts("]");
 }
 
 
 static void
 insertData (queue_t* queuePtr, long* dataPtr)
 {
-    printf("Inserting %li: ", *dataPtr);
-    assert(queue_push(queuePtr, dataPtr));
-    printQueue(queuePtr);
+  printf("Inserting %li: ", *dataPtr);
+  assert(queue_push(queuePtr, dataPtr));
+  printQueue(queuePtr);
 }
 
 
 int
 main ()
 {
-    queue_t* queuePtr;
-    random_t* randomPtr;
-    long data[] = {3, 1, 4, 1, 5};
-    long numData = sizeof(data) / sizeof(data[0]);
-    long i;
+  queue_t* queuePtr;
+  random_t* randomPtr;
+  long data[] = {3, 1, 4, 1, 5};
+  long numData = sizeof(data) / sizeof(data[0]);
+  long i;
 
-    randomPtr = random_alloc();
-    assert(randomPtr);
-    random_seed(randomPtr, 0);
+  randomPtr = random_alloc();
+  assert(randomPtr);
+  random_seed(randomPtr, 0);
 
-    puts("Starting tests...");
+  puts("Starting tests...");
 
-    queuePtr = queue_alloc(-1);
+  queuePtr = queue_alloc(-1);
 
-    assert(queue_isEmpty(queuePtr));
-    for (i = 0; i < numData; i++) {
-        insertData(queuePtr, &data[i]);
-    }
-    assert(!queue_isEmpty(queuePtr));
+  assert(queue_isEmpty(queuePtr));
+  for (i = 0; i < numData; i++) {
+    insertData(queuePtr, &data[i]);
+  }
+  assert(!queue_isEmpty(queuePtr));
 
-    for (i = 0; i < numData; i++) {
-        long* dataPtr = (long*)queue_pop(queuePtr);
-        printf("Removing %li: ", *dataPtr);
-        printQueue(queuePtr);
-    }
-    assert(!queue_pop(queuePtr));
-    assert(queue_isEmpty(queuePtr));
+  for (i = 0; i < numData; i++) {
+    long* dataPtr = (long*)queue_pop(queuePtr);
+    printf("Removing %li: ", *dataPtr);
+    printQueue(queuePtr);
+  }
+  assert(!queue_pop(queuePtr));
+  assert(queue_isEmpty(queuePtr));
 
-    puts("All tests passed.");
+  puts("All tests passed.");
 
-    for (i = 0; i < numData; i++) {
-        insertData(queuePtr, &data[i]);
-    }
-    for (i = 0; i < numData; i++) {
-        printf("Shuffle %li: ", i);
-        queue_shuffle(queuePtr, randomPtr);
-        printQueue(queuePtr);
-    }
-    assert(!queue_isEmpty(queuePtr));
+  for (i = 0; i < numData; i++) {
+    insertData(queuePtr, &data[i]);
+  }
+  for (i = 0; i < numData; i++) {
+    printf("Shuffle %li: ", i);
+    queue_shuffle(queuePtr, randomPtr);
+    printQueue(queuePtr);
+  }
+  assert(!queue_isEmpty(queuePtr));
 
-    queue_free(queuePtr);
+  queue_free(queuePtr);
 
-    return 0;
+  return 0;
 }
 
 
