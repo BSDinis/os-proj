@@ -133,6 +133,7 @@ static void parseArgs (long argc, char* const argv[]){
             case '?':
             case 'h':
             default:
+                opterr++;
                 break;
         }
     }
@@ -141,13 +142,17 @@ static void parseArgs (long argc, char* const argv[]){
         if (!global_inputFile) {
             fp = fopen(argv[i], "r");
             if (fp == NULL) {
-                fprintf(stderr, "Non-option argument: %s\n", argv[i]);
+                fprintf(stderr, "Non-existing file: %s\n", argv[i]);
                 opterr++;
             }
             else {
                 fclose(fp);
                 global_inputFile = argv[i];
             }
+        }
+        else {
+          fprintf(stderr, "Extra argument: %s\n", argv[i]);
+          opterr++;
         }
     }
 
