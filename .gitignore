@@ -5,3 +5,5 @@ CircuitRouter-SeqSolver/CircuitRouter-SeqSolver
 .*
 *.md
 *.txt
+*.res
+*.old
