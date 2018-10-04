@@ -241,18 +241,19 @@ void grid_print_to_file (grid_t* gridPtr, FILE *stream){
     assert(gridPtr);
     assert(stream);
 
+    long x, y, z;
     long width  = gridPtr->width;
     long height = gridPtr->height;
     long depth  = gridPtr->depth;
-    for (long k = 0; k < depth; k++) {
-      	fprintf(stream, "[z = %li]\n", k);
-      	for (long i = 0; i < width; i++) {
-          	for (long j = 0; i < height; j++) {
-                fprintf(stream, "%4li", *grid_getPointRef(gridPtr, i, j, k));
+    for (z = 0; z < depth; z++) {
+      	fprintf(stream, "[z = %li]\n", z);
+      	for (x = 0; x < width; x++) {
+          	for (y = 0; y < height; y++) {
+                fprintf(stream, "%4li", *grid_getPointRef(gridPtr, x, y, z));
             }
-            fputs("", stream);
+            fputc('\n', stream);
         }
-        fputs("", stream);
+        fputc('\n', stream);
     }
     fflush(stream);
 }

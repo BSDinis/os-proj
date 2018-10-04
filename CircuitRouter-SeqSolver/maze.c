@@ -64,12 +64,6 @@
 #include "lib/types.h"
 #include "lib/vector.h"
 
-/* filename where to output grid in maze_checkPaths */
-#ifdef OUT_FILENAME
-#undef OUT_FILENAME
-#endif
-#define OUT_FILENAME "out.txt"
-
 /* =============================================================================
  * maze_alloc
  * =============================================================================
@@ -158,7 +152,7 @@ static void addToGrid (grid_t* gridPtr, vector_t* vectorPtr, char* type){
  * =============================================================================
  */
 
-long maze_read (maze_t* mazePtr){
+long maze_read (maze_t* mazePtr, const char * const input_filename, FILE *out_stream){
    
    /*
     * Parse input from stdin
@@ -167,13 +161,22 @@ long maze_read (maze_t* mazePtr){
    long height = -1;
    long width  = -1;
    long depth  = -1;
+   FILE *input_stream = NULL;
    char line[256];
    list_t* workListPtr = list_alloc(&coordinate_comparePair);
    vector_t* wallVectorPtr = mazePtr->wallVectorPtr;
    vector_t* srcVectorPtr = mazePtr->srcVectorPtr;
    vector_t* dstVectorPtr = mazePtr->dstVectorPtr;
    
-   while (fgets(line, sizeof(line), stdin)) {
+   assert(input_filename);
+   input_stream = fopen(input_filename, "r");
+   if (!input_stream) {
+       fprintf(stderr, "Error: failed to open input stream (filename %s)", 
+           input_filename);
+       exit(1);
+   }
+   
+   while (fgets(line, sizeof(line), input_stream)) {
        
        char code;
        long x1, y1, z1;
@@ -238,11 +241,14 @@ long maze_read (maze_t* mazePtr){
            default: { /* error */
                fprintf(stderr, "Error: line %li invalid\n",
                        lineNumber);
+               fclose(input_stream);
                exit(1);
            }
+
        }
        
    } /* iterate over lines in input file */
+   fclose(input_stream);
    
    
    /*
@@ -259,8 +265,8 @@ long maze_read (maze_t* mazePtr){
    addToGrid(gridPtr, wallVectorPtr, "wall");
    addToGrid(gridPtr, srcVectorPtr,  "source");
    addToGrid(gridPtr, dstVectorPtr,  "destination");
-   printf("Maze dimensions = %li x %li x %li\n", width, height, depth);
-   printf("Paths to route  = %li\n", list_getSize(workListPtr));
+   fprintf(out_stream, "Maze dimensions = %li x %li x %li\n", width, height, depth);
+   fprintf(out_stream, "Paths to route  = %li\n", list_getSize(workListPtr));
    
    /*
     * Initialize work queue
@@ -281,7 +287,7 @@ long maze_read (maze_t* mazePtr){
  * maze_checkPaths
  * =============================================================================
  */
-bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPrintPaths){
+bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPrintPaths, FILE * out_stream){
    grid_t* gridPtr = mazePtr->gridPtr;
    long width  = gridPtr->width;
    long height = gridPtr->height;
@@ -299,6 +305,7 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
        coordinate_t* srcPtr = (coordinate_t*)vector_at(srcVectorPtr, i);
        grid_setPoint(testGridPtr, srcPtr->x, srcPtr->y, srcPtr->z, 0);
    }
+
 
    /* Mark destinations */
    vector_t* dstVectorPtr = mazePtr->dstVectorPtr;
@@ -371,19 +378,11 @@ bool_t maze_checkPaths (maze_t* mazePtr, list_t* pathVectorListPtr, bool_t doPri
    } /* iterate over pathVectorList */
 
    if (doPrintPaths) {
-       puts("\nRouted Maze:");
-       grid_print(testGridPtr);
+       /* output grid to a file */
+       assert(out_stream);
+       grid_print_to_file(testGridPtr, out_stream);
    }
 
-   /* output grid to a file */
-   FILE *out_file = fopen(OUT_FILENAME, "w");
-   if (out_file) {
-     grid_print_to_file(testGridPtr, out_file);
-     fclose(out_file);
-   }
-   else {
-     perror("maze_checkPaths: fopen");
-   }
    
    grid_free(testGridPtr);
 

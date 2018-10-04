@@ -55,6 +55,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "lib/list.h"
 #include "maze.h"
@@ -86,14 +87,13 @@ long global_params[256]; /* 256 = ascii limit */
  * =============================================================================
  */
 static void displayUsage (const char* appName){
-    printf("Usage: %s [options]\n", appName);
-    puts("\nOptions:                            (defaults)\n");
-    printf("    b <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
-    printf("    p          [p]rint routed maze  (false)\n");
-    printf("    x <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
-    printf("    y <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
-    printf("    z <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
-    printf("    h          [h]elp message       (false)\n");
+    printf("Usage: %s [options] <filename>\n", appName);
+    puts("\nOptions:                                        (defaults)\n");
+    printf("    b             <INT>    [b]end cost          (%i)\n", PARAM_DEFAULT_BENDCOST);
+    printf("    x             <UINT>   [x] movement cost    (%i)\n", PARAM_DEFAULT_XCOST);
+    printf("    y             <UINT>   [y] movement cost    (%i)\n", PARAM_DEFAULT_YCOST);
+    printf("    z             <UINT>   [z] movement cost    (%i)\n", PARAM_DEFAULT_ZCOST);
+    printf("    h                      [h]elp message       (false)\n");
     exit(1);
 }
 
@@ -117,21 +117,18 @@ static void setDefaultParams (){
 static void parseArgs (long argc, char* const argv[]){
     long i;
     long opt;
-
+    FILE *fp = NULL;
     opterr = 0;
 
     setDefaultParams();
 
-    while ((opt = getopt(argc, argv, "hb:px:y:z:")) != -1) {
+    while ((opt = getopt(argc, argv, "hb:x:y:z:")) != -1) {
         switch (opt) {
             case 'b':
             case 'x':
             case 'y':
             case 'z':
                 global_params[(unsigned char)opt] = atol(optarg);
-                break;
-            case 'p':
-                global_doPrint = TRUE;
                 break;
             case '?':
             case 'h':
@@ -142,13 +139,59 @@ static void parseArgs (long argc, char* const argv[]){
     }
 
     for (i = optind; i < argc; i++) {
-        fprintf(stderr, "Non-option argument: %s\n", argv[i]);
-        opterr++;
+        if (!global_inputFile) {
+            fp = fopen(argv[i], "r");
+            if (fp == NULL) {
+                fprintf(stderr, "Non-existing file: %s\n", argv[i]);
+                opterr++;
+                i = argc; // break
+            }
+            else {
+                fclose(fp);
+                global_inputFile = argv[i];
+            }
+        }
+        else {
+          fprintf(stderr, "Extra argument: %s\n", argv[i]);
+          opterr++;
+        }
     }
 
-    if (opterr) {
+    if (opterr || !global_inputFile) {
         displayUsage(argv[0]);
     }
+}
+
+/* =============================================================================
+ * open_out_stream
+ * =============================================================================
+ */
+FILE * open_out_stream(const char * const input_filename) 
+{
+    FILE *fp;
+    size_t input_len = strlen(input_filename);
+    char * out_filename = malloc((input_len + 4 + 1) * sizeof(char));
+    strncpy(out_filename, input_filename, input_len + 1);
+    strcat(out_filename, ".res");
+    fp = fopen(out_filename, "r");
+
+    if (fp != NULL) {
+        // renaming .res to .res.old
+        fclose(fp);
+        char * old_filename = malloc((input_len + 8 + 1) * sizeof(char));
+        strncpy(old_filename, out_filename, input_len + 4 + 1);
+        strcat(old_filename, ".old");
+        rename(out_filename, old_filename);
+        free(old_filename);
+    }
+
+    fp = fopen(out_filename, "w");
+    free(out_filename);
+    if (fp == NULL) {
+        perror("open_out_stream: fopen");
+        exit(1);
+    }
+    return fp;
 }
 
 
@@ -164,7 +207,8 @@ int main(int argc, char** argv){
     maze_t* mazePtr = maze_alloc();
     assert(mazePtr);
 
-    long numPathToRoute = maze_read(mazePtr);
+    FILE * out_stream = open_out_stream(global_inputFile);
+    long numPathToRoute = maze_read(mazePtr, global_inputFile, out_stream);
     router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                                        global_params[PARAM_YCOST],
                                        global_params[PARAM_ZCOST],
@@ -189,17 +233,18 @@ int main(int argc, char** argv){
         vector_t* pathVectorPtr = (vector_t*)list_iter_next(&it, pathVectorListPtr);
         numPathRouted += vector_getSize(pathVectorPtr);
 	}
-    printf("Paths routed    = %li\n", numPathRouted);
-    printf("Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
+    fprintf(out_stream, "Paths routed    = %li\n", numPathRouted);
+    fprintf(out_stream, "Elapsed time    = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
 
 
     /*
      * Check solution and clean up
      */
     assert(numPathRouted <= numPathToRoute);
-    bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, global_doPrint);
+    bool_t status = maze_checkPaths(mazePtr, pathVectorListPtr, global_doPrint, out_stream);
     assert(status == TRUE);
-    puts("Verification passed.");
+    fputs("Verification passed.", out_stream);
+    fclose(out_stream);
 
     maze_free(mazePtr);
     router_free(routerPtr);
