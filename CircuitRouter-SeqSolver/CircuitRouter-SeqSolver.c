@@ -144,6 +144,7 @@ static void parseArgs (long argc, char* const argv[]){
             if (fp == NULL) {
                 fprintf(stderr, "Non-existing file: %s\n", argv[i]);
                 opterr++;
+                i = argc; // break
             }
             else {
                 fclose(fp);
