@@ -15,20 +15,30 @@
 
 
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-uint64_t global_max_children = -1; // since this is unsigned it becomes the maximum
+int64_t global_max_children;
 
 /* =============================================================================
   * displayUsage
   * =============================================================================
   */
 static void display_usage(const char* program_name){
-  printf("Usage: %s <max_children> (default: unlimited)\n", program_name);
+  printf("Usage: %s <max_children (>0) > (default: unlimited)\n", program_name);
   exit(1);
+}
+
+/* =============================================================================
+  * setDefaults
+  * =============================================================================
+  */
+static void setDefaults ()
+{
+  global_max_children = -1;
 }
 
 
@@ -37,8 +47,24 @@ static void display_usage(const char* program_name){
   * =============================================================================
   */
 static void parseArgs (long argc, char* const argv[]){
-  if (argc < 0 || argc > 1) {
+  if (argc < 1 || argc > 2) {
     display_usage(argv[0]);
+  }
+  else if (argc == 2) {
+    int _errno = errno; // push errno
+    errno = 0;
+    global_max_children = strtoll(argv[1], NULL, 10);
+    if (errno != 0) {
+      perror("parseArgs: strtoll");
+      display_usage(argv[0]);
+    }
+    else if (global_max_children <= 0) {
+      display_usage(argv[0]);
+    }
+    errno = _errno; // pop errno
+  }
+  else {
+    setDefaults();
   }
 }
 
@@ -51,9 +77,7 @@ int main(int argc, char** argv){
   * Initialization
   */
   parseArgs(argc, (char** const)argv);
-
-  printf("hi");
-
+  printf("hi\nmaxchildren = %ld\n", global_max_children);
   exit(0);
 }
 
