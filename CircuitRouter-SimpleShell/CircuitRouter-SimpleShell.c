@@ -37,7 +37,9 @@ static void display_usage(const char* program_name){
   * =============================================================================
   */
 static void parseArgs (long argc, char* const argv[]){
-  
+  if (argc < 0 || argc > 1) {
+    display_usage(argv[0]);
+  }
 }
 
 /* =============================================================================
@@ -50,6 +52,7 @@ int main(int argc, char** argv){
   */
   parseArgs(argc, (char** const)argv);
 
+  printf("hi");
 
   exit(0);
 }
