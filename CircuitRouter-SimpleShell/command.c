@@ -71,7 +71,6 @@ command_t get_command()
   int max_argc = 2; // run has two args
   char **argv = malloc((max_argc + 1) * sizeof(char *));
 
-  fprintf(stdout, "> ");
   argc = readLineArguments(argv, max_argc + 1, buffer, MAXLINESIZE);
   if (argc < 0) {
     fprintf(stderr, "get_command: error reading from the line\n");
