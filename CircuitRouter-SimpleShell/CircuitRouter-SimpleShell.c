@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "lib/commandlinereader.h"
+
 int64_t global_max_children;
 
 /* =============================================================================
