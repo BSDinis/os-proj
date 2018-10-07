@@ -11,11 +11,6 @@
 #ifndef __COMMAND_H
 #define __COMMAND_H
 
-enum {
-  TRUE = 1,
-  FALSE = 0
-};
-
 /* command codes */
 enum {
   run_code = 0,

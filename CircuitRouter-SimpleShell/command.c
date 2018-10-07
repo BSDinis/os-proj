@@ -14,6 +14,7 @@
 
 #include "command.h"
 #include "lib/commandlinereader.h"
+#include "lib/list.h"
 
 #define MAXLINESIZE (1<<10) // 1024
 
@@ -39,7 +40,13 @@ static command_t parse_command(char **argv, int argc)
       size_t len = strlen(argv[1]);
       cmd.code = run_code;
       cmd.inputfile = malloc((len + 1) * sizeof(char)); 
-      strncpy(cmd.inputfile, argv[1], len + 1);
+      if (cmd.inputfile == NULL) {
+        fprintf(stderr, "parse_command: failed to initialize memory for inputfile\n");
+        cmd.code = invalid_code;
+      }
+      else {
+        strncpy(cmd.inputfile, argv[1], len + 1);
+      }
     }
   }
   else if (strncmp(argv[0], "exit", 5) == 0) {

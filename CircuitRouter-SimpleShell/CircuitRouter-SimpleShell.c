@@ -21,9 +21,35 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 #include "command.h"
+#include "lib/list.h"
+
+#define SOLVER "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver"
+
+/* 
+ * child_ctx_t
+ * hold relevant information related to a child process
+ */
+typedef struct {
+  pid_t pid;
+  int status_code;
+} child_ctx_t;
+
 
 int64_t global_max_children;
+
+child_ctx_t ** global_zombies; // finished processes
+ssize_t allocd_zombies = (1 << 8);
+ssize_t n_zombies = 0;
+
+pid_t * global_active; // active processes (limited by global_max_children)
+ssize_t allocd_active;
+ssize_t n_active;
+
 
 /* =============================================================================
   * displayUsage
@@ -42,7 +68,6 @@ static void setDefaults ()
 {
   global_max_children = -1;
 }
-
 
 /* =============================================================================
   * parseArgs
@@ -70,6 +95,70 @@ static void parseArgs (long argc, char* const argv[]){
   }
 }
 
+/* =================================================================
+ * add_active
+ * =================================================================
+ */
+void add_active(pid_t pid)
+{
+  if (n_active == allocd_active) {
+    allocd_active *= 2;
+    global_active = realloc(global_active, allocd_active * sizeof(pid_t));
+  }
+  
+  global_active[n_active++] = pid;
+}
+
+/* =================================================================
+ * rem_active
+ * =================================================================
+ */
+void rem_active(pid_t pid)
+{
+  ssize_t i, j;
+  for (i = j = 0; i < n_active; i++) {
+    if (global_active[i] == pid)
+      continue;
+
+    global_active[j++] = global_active[i];
+  }
+  
+  n_active = j;
+}
+
+/* =================================================================
+ * add_zombie
+ * =================================================================
+ */
+void add_zombie(child_ctx_t *ctx)
+{
+  if (n_zombies == allocd_zombies) {
+    allocd_zombies *= 2;
+    global_zombies = realloc(global_zombies, allocd_zombies * sizeof(child_ctx_t *));
+  }
+  
+  global_zombies[n_zombies++] = ctx;
+}
+
+/* =================================================================
+ * rem_zombie
+ * =================================================================
+ */
+void rem_zombie(pid_t pid)
+{
+  ssize_t i, j;
+  for (i = j = 0; i < n_zombies; i++) {
+    if (global_zombies[i]->pid == pid) {
+      free(global_zombies[i]);
+      continue;
+    }
+
+    global_zombies[j++] = global_zombies[i];
+  }
+  
+  n_zombies = j;
+}
+
 /* =============================================================================
   * print_command_help: show comand help
   * =============================================================================
@@ -88,7 +177,26 @@ static void print_command_help()
   */
 static void run_solver(const char *inputfile)
 {
-  printf("You entered an run command for file %s\n", inputfile);
+  if (global_max_children != -1 
+      && n_active == global_max_children) {
+
+    child_ctx_t *finished = malloc(sizeof(child_ctx_t));
+    int ret;
+    finished->pid = wait(&ret);
+    finished->status_code = ret;
+    rem_active(finished->pid);
+    add_zombie(finished);
+  }
+  
+  pid_t cid = fork();
+  if (cid == 0) {
+    // child
+    if (execl(SOLVER, SOLVER, inputfile, (char *) NULL) == -1) {
+      perror("FATAL ERROR: run_solver: execl");
+      exit(-2);
+    }
+  }
+  add_active(cid);
 }
 
 /* =============================================================================
@@ -97,7 +205,23 @@ static void run_solver(const char *inputfile)
   */
 static void exit_shell()
 {
-  printf("You entered an exit command\n");
+  while (n_active != 0) {
+    child_ctx_t *finished = malloc(sizeof(child_ctx_t));
+    finished->pid = wait(&(finished->status_code));
+    rem_active(finished->pid);
+    add_zombie(finished);
+  }
+  
+  for (int i = 0; i < n_zombies; i++) {
+    printf("CHILD EXITED (PID=%d; return %sOK %d)\n",
+        global_zombies[i]->pid,
+        (global_zombies[i]->status_code == 0) ? "" : "N",
+        global_zombies[i]->status_code);
+
+    free(global_zombies[i]);
+  }
+  
+  printf("END.\n");
 }
 
 /* =============================================================================
@@ -126,19 +250,34 @@ void execute_command(command_t cmd)
   * =============================================================================
   */
 int main(int argc, char** argv){
-  /*
-  * Initialization
-  */
+  // search for solver
+  FILE *fp = fopen(SOLVER, "r");
+  if (fp == NULL) {
+    fprintf(stderr, "Could not find solver. Exiting\n");
+    exit(1);
+  }
+  fclose(fp);
+  
+  /* Initialization */
   parseArgs(argc, (char** const)argv);
 
-  command_t cmd;
+  if (global_max_children != -1)
+    allocd_active = global_max_children;
+  else
+    allocd_active = 1 << 6;
 
+  global_zombies = malloc(allocd_zombies * sizeof(child_ctx_t));
+  global_active = malloc(allocd_active * sizeof(pid_t));
+
+  command_t cmd;
   do {
     cmd = get_command();
     execute_command(cmd);
     free_command(cmd);
   } while (cmd.code != exit_code);
 
+  free(global_active);
+  free(global_zombies);
   exit(0);
 }
 
