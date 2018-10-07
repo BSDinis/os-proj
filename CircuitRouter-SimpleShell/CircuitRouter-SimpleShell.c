@@ -71,12 +71,24 @@ static void parseArgs (long argc, char* const argv[]){
 }
 
 /* =============================================================================
+  * print_command_help: show comand help
+  * =============================================================================
+  */
+static void print_command_help()
+{
+  fprintf(stderr, "Invalid command entered\n");
+  fprintf(stderr, "Command List:\n");
+  fprintf(stderr, "run <inputfile>\t: run CircuitSeqSolver for inputfile\n");
+  fprintf(stderr, "exit\t\t: exit shell, showing the results for all the processes\n");
+}
+
+/* =============================================================================
   * run_solver: spawn a new Circuit Seq Solver as a detached process
   * =============================================================================
   */
-static void run_shell(const char *inputfile)
+static void run_solver(const char *inputfile)
 {
-  ;;
+  printf("You entered an run command for file %s\n", inputfile);
 }
 
 /* =============================================================================
@@ -85,7 +97,27 @@ static void run_shell(const char *inputfile)
   */
 static void exit_shell()
 {
-  ;;
+  printf("You entered an exit command\n");
+}
+
+/* =============================================================================
+  * execute_command: service the client's request
+  * =============================================================================
+  */
+void execute_command(command_t cmd)
+{
+  switch (cmd.code) {
+    case run_code:
+      run_solver(cmd.inputfile);
+      break;
+    case exit_code:
+      exit_shell();
+      break; 
+    case invalid_code:
+    default:
+      print_command_help();
+      break;
+  }
 }
 
 
@@ -103,7 +135,7 @@ int main(int argc, char** argv){
 
   do {
     cmd = get_command();
-    print_command(cmd);
+    execute_command(cmd);
     free_command(cmd);
   } while (cmd.code != exit_code);
 

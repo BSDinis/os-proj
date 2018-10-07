@@ -31,7 +31,9 @@ typedef struct {
 /* get a command from stdin (displays prompt)*/
 command_t get_command();
 
-/* get a command from stdin (displays prompt)*/
+/* print a command (debug)*/
 void print_command(command_t);
 
+/* free a command's internal memory */
+void free_command(command_t cmd);
 #endif // ! __COMMAND_H
