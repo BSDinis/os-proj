@@ -8,6 +8,9 @@
  * =============================================================================
  */
 
+#ifndef __COMMAND_H
+#define __COMMAND_H
+
 enum {
   TRUE = 1,
   FALSE = 0
@@ -25,5 +28,10 @@ typedef struct {
   char * inputfile;
 } command_t;
 
-/* parse a command from an array of strings with argc tokens */
-command_t parse_command(char **argv, int argc);
+/* get a command from stdin (displays prompt)*/
+command_t get_command();
+
+/* get a command from stdin (displays prompt)*/
+void print_command(command_t);
+
+#endif // ! __COMMAND_H

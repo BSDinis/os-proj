@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "lib/commandlinereader.h"
 #include "command.h"
 
 int64_t global_max_children;
@@ -99,7 +98,15 @@ int main(int argc, char** argv){
   * Initialization
   */
   parseArgs(argc, (char** const)argv);
-  printf("hi\nmaxchildren = %ld\n", global_max_children);
+
+  command_t cmd;
+
+  do {
+    cmd = get_command();
+    print_command(cmd);
+    free_command(cmd);
+  } while (cmd.code != exit_code);
+
   exit(0);
 }
 

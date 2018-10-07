@@ -8,7 +8,7 @@ INCLUDES := -I..
 VPATH := .:..
 
 # fdiagnostics... make the output colorized
-CFLAGS := -Wall -Werror -fdiagnostics-color=always $(INCLUDES)
+CFLAGS := -Wall -fdiagnostics-color=always $(INCLUDES)
 LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES) 
 LDLIBS := -lpthread -lm # link pthreads and math functs
 LDFLAGS += -L.. -L../lib
