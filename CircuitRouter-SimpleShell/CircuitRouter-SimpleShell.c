@@ -1,17 +1,17 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
-  *
-  * Simple Shell to spawn CircuitSolver-SeqSolver processes
-  *
-  * Interface
-  * 
-  * run filename (solve the Circuit at that filename)
-  * exit (exit the application, printing all the results from the processes)
-  * =============================================================================
-  *
-  * CircuitRouter-SimpleShell.c
-  *
-  * =============================================================================
-  */
+ *
+ * Simple Shell to spawn CircuitSolver-SeqSolver processes
+ *
+ * Interface
+ * 
+ * run filename (solve the Circuit at that filename)
+ * exit (exit the application, printing all the results from the processes)
+ * =============================================================================
+ *
+ * CircuitRouter-SimpleShell.c
+ *
+ * =============================================================================
+ */
 
 
 #include <assert.h>
@@ -22,6 +22,7 @@
 #include <stdbool.h>
 
 #include "lib/commandlinereader.h"
+#include "command.h"
 
 int64_t global_max_children;
 
@@ -69,6 +70,25 @@ static void parseArgs (long argc, char* const argv[]){
     setDefaults();
   }
 }
+
+/* =============================================================================
+  * run_solver: spawn a new Circuit Seq Solver as a detached process
+  * =============================================================================
+  */
+static void run_shell(const char *inputfile)
+{
+  ;;
+}
+
+/* =============================================================================
+  * exit_shell: wait for all processes to terminate, print results and exit
+  * =============================================================================
+  */
+static void exit_shell()
+{
+  ;;
+}
+
 
 /* =============================================================================
   * main
