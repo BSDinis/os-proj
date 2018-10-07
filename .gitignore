@@ -1,6 +1,7 @@
 *.o
 autodep
 CircuitRouter-SeqSolver/CircuitRouter-SeqSolver
+CircuitRouter-SimpleShell/CircuitRouter-SimpleShell
 *.a
 .*
 *.md

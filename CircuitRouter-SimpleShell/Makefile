@@ -2,15 +2,17 @@
 
 CC := gcc
 
-INCLUDES := 
+INCLUDES := -I..
 
 # vpath: tells where to search for files
-VPATH := .
+VPATH := .:..
 
 # fdiagnostics... make the output colorized
-CFLAGS := -Wall -Werror -fdiagnostics-color=always #$(INCLUDES)
-LDFLAGS := -L -fdiagnostics-color=always #$(INCLUDES) 
+CFLAGS := -Wall -fdiagnostics-color=always $(INCLUDES)
+LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES) 
 LDLIBS := -lpthread -lm # link pthreads and math functs
+LDFLAGS += -L.. -L../lib
+LDLIBS += -lutils
 
 # if you run 'make DEBUG=no' it will compile without the debugger flag
 ifneq ($(strip $(DEBUG)), no)
@@ -33,7 +35,7 @@ TARGETS = CircuitRouter-SimpleShell
 # creates rules based on their dependencies
 #
 # utils is a target that recompiles the library
-all: depend $(TARGETS) 
+all: depend utils $(TARGETS) 
 
 # create static lib
 # -C means it goes into the lib dir and runs make
