@@ -213,10 +213,9 @@ static void exit_shell()
   }
   
   for (int i = 0; i < n_zombies; i++) {
-    printf("CHILD EXITED (PID=%d; return %sOK %d)\n",
+    printf("CHILD EXITED (PID=%d; return %sOK)\n",
         global_zombies[i]->pid,
-        (global_zombies[i]->status_code == 0) ? "" : "N",
-        global_zombies[i]->status_code);
+        (global_zombies[i]->status_code == 0) ? "" : "N");
 
     free(global_zombies[i]);
   }
