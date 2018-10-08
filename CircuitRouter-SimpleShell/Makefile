@@ -30,12 +30,17 @@ endif
 SOURCES = $(wildcard *.c)
 OBJECTS = $(SOURCES:.c=.o)
 TARGETS = CircuitRouter-SimpleShell
+SOLVERDIR = ../CircuitRouter-SeqSolver
+SOLVER = $(SOLVERDIR)/CircuitRouter-SeqSolver
 
 # depend creates autodep, which parses the files and
 # creates rules based on their dependencies
 #
 # utils is a target that recompiles the library
-all: depend utils $(TARGETS) 
+all: depend utils $(SOLVER) $(TARGETS) 
+
+$(SOLVER):
+	@make -C $(SOLVERDIR)
 
 # create static lib
 # -C means it goes into the lib dir and runs make
@@ -55,6 +60,7 @@ $(TARGETS): $(OBJECTS)
 clean:
 	@rm -f $(OBJECTS) $(TARGETS) autodep vgcore*
 	@make clean -C ../lib
+	@make clean -C $(SOLVERDIR)
 
 # get dependencies
 .PHONY: depend
