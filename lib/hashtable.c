@@ -24,18 +24,18 @@
 struct hashtable {
   ssize_t capacity;
   ssize_t size;
-  ssize_t (*hash1)(ssize_t, void*);
-  ssize_t (*hash2)(ssize_t, void*);
-  int (*equals)(void *, void*); // everything is equal to NULL
+  ssize_t (*hash1)(const ssize_t, const void*);
+  ssize_t (*hash2)(const ssize_t, const void*);
+  int (*equals)(const void *, const void*); // everything is equal to NULL
   void ** table;
 };
 
 // create hashtable
 struct hashtable * hashtable_(
-    ssize_t initial_size,
-    ssize_t (*hash1)(ssize_t, void *),
-    ssize_t (*hash2)(ssize_t, void *),
-    int (*equals)(void *, void *)
+    const ssize_t initial_size,
+    ssize_t (*hash1)(const ssize_t, const void *),
+    ssize_t (*hash2)(const ssize_t, const void *),
+    int (*equals)(const void *, const void *)
     )
 {
   struct hashtable * t = malloc(sizeof(struct hashtable));
@@ -53,10 +53,10 @@ struct hashtable * hashtable_(
 
 
 // lookup by index
-static int hashtable_index_lookup(struct hashtable *t, void * item)
+static int hashtable_index_lookup(const struct hashtable *t, const void * item)
 {
   ssize_t index = t->hash1(t->capacity, item);
-  ssize_t step = t->hash2(t->capacity, item);
+  const ssize_t step = t->hash2(t->capacity, item);
 
   while (t->table[index] == SENTINEL || 
       (t->table[index] != NULL
@@ -69,7 +69,7 @@ static int hashtable_index_lookup(struct hashtable *t, void * item)
 }
 
 // add to table 
-static int hashtable_add_table(void ** table, ssize_t capacity, ssize_t index, ssize_t step, void * item)
+static int hashtable_add_table(void ** table, const ssize_t capacity, ssize_t index, const ssize_t step, void * item)
 {
   while (table[index] != NULL && table[index] != SENTINEL) {
     index += step;
@@ -152,13 +152,14 @@ void * hashtable_rem(struct hashtable * t, void * item)
     return NULL;
 
   ssize_t index = hashtable_index_lookup(t, item);
+
   void * rem_item = t->table[index];
   if (rem_item != NULL) {
     t->table[index] = SENTINEL;
-    free(rem_item);
+    t->size--;
   }
 
-  return item;
+  return rem_item;
 }
 
 
@@ -169,7 +170,7 @@ void * hashtable_rem(struct hashtable * t, void * item)
 // the function can be given an incomplete struct (with the same index)
 //
 // This depends on the hash functions given
-void * hashtable_lookup(struct hashtable *t, void * item) 
+void * hashtable_lookup(const struct hashtable *t, const void * item) 
 {
   if (t == NULL || item == NULL)
     return NULL;
@@ -178,14 +179,14 @@ void * hashtable_lookup(struct hashtable *t, void * item)
 }
 
 
-void ** get_table(struct hashtable *t) {
-  if (t == NULL) return NULL;
-  return t->table;
-}
-
-ssize_t get_capacity(struct hashtable *t) {
+ssize_t hashtable_capacity(const struct hashtable *t) {
   if (t == NULL) return -1;
   return t->capacity;
+}
+
+ssize_t hashtable_size(const struct hashtable *t) {
+  if (t == NULL) return -1;
+  return t->size;
 }
 
 #endif // __HASHTABLE_H

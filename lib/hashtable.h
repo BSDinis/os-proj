@@ -18,10 +18,10 @@ typedef struct hashtable * hashtable_t;
 
 // create hashtable
 hashtable_t hashtable_(
-    ssize_t init_capacity,
-    ssize_t (*hash1)(ssize_t, void *),
-    ssize_t (*hash2)(ssize_t, void *),
-    int (*equals)(void *, void *)
+    const ssize_t init_capacity,
+    ssize_t (*hash1)(const ssize_t, const void *),
+    ssize_t (*hash2)(const ssize_t, const void *),
+    int (*equals)(const void *, const void *)
     );
 
 
@@ -41,8 +41,11 @@ void * hashtable_rem(hashtable_t, void * item);
 // the function can be given an incomplete struct (with the same index)
 //
 // This depends on the hash functions given
-void * hashtable_lookup(hashtable_t, void * item);
+void * hashtable_lookup(const hashtable_t, const void * item);
 
-void ** get_table(struct hashtable *t) ;
-ssize_t get_capacity(struct hashtable *t) ;
+// find the hashtable capacity
+ssize_t hashtable_capacity(const hashtable_t) ;
+
+// find the hashtable size
+ssize_t hashtable_size(const hashtable_t) ;
 #endif // __HASHTABLE_H
