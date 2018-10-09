@@ -138,9 +138,9 @@ static void parseArgs (const long argc, char* const argv[]){
  * add_zombie
  * =================================================================
  */
-void add_zombie(const child_ctx_t * ctx)
+void add_zombie(child_ctx_t * ctx)
 {
-  if (simple_list_pushback(global_zombies, (const void *) ctx) == -1) 
+  if (simple_list_pushback(global_zombies, (void *) ctx) == -1) 
     fprintf(stderr, "add_zombie: simple_list_pushback returned error\n");
 }
 
