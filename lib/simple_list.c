@@ -32,9 +32,25 @@ struct simple_list {
 struct simple_list * simple_list_()
 {
   struct simple_list * l = malloc(sizeof(struct simple_list));
-
+  if (l == NULL) {
+    fprintf(stderr, "simple_list: malloc failed\n");
+    return NULL; 
+  }
+  
   l->head = malloc(sizeof(struct node));
+  if (l->head == NULL) {
+    fprintf(stderr, "simple_list: malloc failed\n");
+    free(l);
+    return NULL; 
+  }
+
   l->tail = malloc(sizeof(struct node));
+  if (l->tail == NULL) {
+    fprintf(stderr, "simple_list: malloc failed\n");
+    free(l->head);
+    free(l);
+    return NULL; 
+  }
 
   l->head->item = NULL;
   l->tail->item = NULL;
@@ -69,6 +85,11 @@ int simple_list_pushback(struct simple_list * l, void * item)
   if (l == NULL || item == NULL) return -1;
 
   node_t new = malloc(sizeof(struct node));
+  if (new == NULL) {
+    fprintf(stderr, "simple_list_pushback: malloc failed\n");
+    return -1;
+  }
+  
   new->item = item;
   new->next = l->head->next;
   l->head->next = new;
