@@ -11,19 +11,19 @@ typedef struct {
   int b;
 } pair;  
 
-ssize_t hash1(ssize_t cap, void * arg) {
+ssize_t hash1(const ssize_t cap, const void * arg) {
   pair * p = (pair *) arg;
   return p->a % cap;
 }
 
-ssize_t hash2(ssize_t cap, void * arg) {
+ssize_t hash2(const ssize_t cap, const void * arg) {
   if (arg == NULL) return 3;  
 
   pair * p = (pair *) arg;
   return p->a % 4 + 2;
 }
 
-int equals(void *_1, void *_2)
+int equals(const void *_1, const void *_2)
 {
   if (_1 == NULL || _2 == NULL) return 1;
   pair * c = (pair *) _1;
@@ -48,10 +48,14 @@ int main()
     pair * complete = hashtable_lookup(t, (void *)incomplete);
     printf("(%d, %d) -> (%d, %d)\n", incomplete->a, incomplete->b, complete->a, complete->b);
 
-    if (1) {
-      hashtable_rem(t, (void *) incomplete);
+    if (i % 2) {
+      pair * p = (pair *) hashtable_rem(t, (void *) incomplete);
       if (hashtable_lookup(t, (void *) incomplete) != NULL) {
         fprintf(stderr, "DID NOT REM %d\n", i);
+      }
+      else {
+        printf("REMD (%d, %d)\n", p->a, p->b);
+        free(p);
       }
     }
 
