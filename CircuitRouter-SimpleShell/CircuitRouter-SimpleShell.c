@@ -27,8 +27,13 @@
 
 #include "command.h"
 #include "lib/simple_list.h"
+#include "lib/hashtable.h"
 
 #define SOLVER "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver"
+
+// when removing an active child (by waiting) the wait sys call may fail
+// this defines how many times it is retried
+#define MAX_WAIT_RETRIES 5
 
 /* 
  * child_ctx_t
@@ -42,12 +47,47 @@ typedef struct {
 
 int64_t global_max_children;
 
-
 simple_list_t global_zombies; // finished processes
+hashtable_t global_active; // active processes (limited by global_max_children)
 
-pid_t * global_active; // active processes (limited by global_max_children)
-ssize_t allocd_active;
-ssize_t n_active;
+/* =============================================================================
+ * compare pid pointers
+ * =============================================================================
+ */
+int compare_pid_t(const void *a, const void *b)
+{
+  if (a == NULL || b == NULL) return 1;
+
+  const pid_t * first = (const pid_t *) a;
+  const pid_t * second = (const pid_t *) b;
+  return (*first == *second) ? 1 : 0;
+}
+
+
+/* =============================================================================
+ * hash of a pid pointer
+ * =============================================================================
+ */
+ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
+{
+  if (cap <= 0 || ptr == NULL) return 1;
+
+  const pid_t *pid = (const pid_t *) ptr;
+  return *pid % cap;
+}
+
+
+/* =============================================================================
+ * 2nd hash of a pid pointer
+ * =============================================================================
+ */
+ssize_t hash_pid_2(const ssize_t cap, const void * ptr)
+{
+  if (cap <= 0 || ptr == NULL) return 1;
+
+  const pid_t *pid = (const pid_t *) ptr;
+  return *pid % 7 + 1;
+}
 
 
 /* =============================================================================
@@ -95,44 +135,66 @@ static void parseArgs (long argc, char* const argv[]){
 }
 
 /* =================================================================
+ * add_zombie
+ * =================================================================
+ */
+void add_zombie(child_ctx_t *ctx)
+{
+  if (simple_list_pushback(global_zombies, (void *) ctx) == -1) 
+    fprintf(stderr, "add_zombie: simple_list_pushback returned error\n");
+}
+
+/* =================================================================
  * add_active
  * =================================================================
  */
 void add_active(pid_t pid)
 {
-  if (n_active == allocd_active) {
-    allocd_active *= 2;
-    global_active = realloc(global_active, allocd_active * sizeof(pid_t));
-  }
-  
-  global_active[n_active++] = pid;
+  pid_t *ptr = malloc(sizeof(pid));
+  *ptr = pid;
+  if (hashtable_add(global_active, (void *) ptr) == -1)
+    fprintf(stderr, "add_active: hashtable_add returned error\n");
 }
 
 /* =================================================================
  * rem_active
  * =================================================================
  */
-void rem_active(pid_t pid)
-{
-  ssize_t i, j;
-  for (i = j = 0; i < n_active; i++) {
-    if (global_active[i] == pid)
-      continue;
+void rem_active()
+{                
+  pid_t pid;
+  void *ptr;
+  child_ctx_t *finished = malloc(sizeof(child_ctx_t));
+  int ret;
+  int counter = 0; // we don't want to retry wait indefinetly
+  int successful_wait = 0;
 
-    global_active[j++] = global_active[i];
-  }
-  
-  n_active = j;
+  do {
+    pid = wait(&ret);
+    counter++;
+    if (pid != -1) {
+      successful_wait = 1;
+    }
+    else if (errno == ECHILD) {
+      successful_wait = 1;
+      fprintf(stderr, "rem_active: called wait on childless process.\nAborting\n");
+    }
+    else if (errno == EINTR) {
+      perror("rem_active");
+      fprintf(stderr, "Retrying (%d)\n", counter);
+    }
+  } while (!successful_wait && counter <= MAX_WAIT_RETRIES);
+
+  finished->status_code = ret;
+
+  finished->pid = pid;
+  ptr = hashtable_rem(global_active, (void *) &(finished->pid));
+  if (ptr != NULL)
+    free(ptr);
+
+  add_zombie(finished);
 }
 
-/* =================================================================
- * add_zombie
- * =================================================================
- */
-void add_zombie(child_ctx_t *ctx)
-{
-  simple_list_pushback(global_zombies, (void *) ctx);
-}
 
 /* =================================================================
  * print_status: transverse function
@@ -169,14 +231,8 @@ static void print_command_help()
 static void run_solver(const char *inputfile)
 {
   if (global_max_children != -1 
-      && n_active == global_max_children) {
-
-    child_ctx_t *finished = malloc(sizeof(child_ctx_t));
-    int ret;
-    finished->pid = wait(&ret);
-    finished->status_code = ret;
-    rem_active(finished->pid);
-    add_zombie(finished);
+      && hashtable_size(global_active) == global_max_children) {
+    rem_active();
   }
   
   pid_t cid = fork();
@@ -196,11 +252,8 @@ static void run_solver(const char *inputfile)
   */
 static void exit_shell()
 {
-  while (n_active != 0) {
-    child_ctx_t *finished = malloc(sizeof(child_ctx_t));
-    finished->pid = wait(&(finished->status_code));
-    rem_active(finished->pid);
-    add_zombie(finished);
+  while (hashtable_size(global_active) != 0) {
+    rem_active();
   }
   
   simple_list_transverse(global_zombies, print_status);
@@ -244,13 +297,19 @@ int main(int argc, char** argv){
   /* Initialization */
   parseArgs(argc, (char** const)argv);
 
-  if (global_max_children != -1)
-    allocd_active = global_max_children;
-  else
-    allocd_active = 1 << 6;
 
   global_zombies = simple_list_();  
-  global_active = malloc(allocd_active * sizeof(pid_t));
+
+  ssize_t init_capacity = 0;
+  if (global_max_children != -1)
+    init_capacity = global_max_children;
+  else
+    init_capacity = 1 << 8;
+
+  global_active = hashtable_(init_capacity,
+      hash_pid_1,
+      hash_pid_2,
+      compare_pid_t);
 
   command_t cmd;
   do {
@@ -259,7 +318,7 @@ int main(int argc, char** argv){
     free_command(cmd);
   } while (cmd.code != exit_code);
 
-  free(global_active);
+  free_hashtable(global_active);
   free_simple_list(global_zombies);
   exit(0);
 }
