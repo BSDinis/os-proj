@@ -54,7 +54,7 @@ hashtable_t global_active; // active processes (limited by global_max_children)
  * compare pid pointers
  * =============================================================================
  */
-int compare_pid_t(const void *a, const void *b)
+static int compare_pid_t(const void *a, const void *b)
 {
   if (a == NULL || b == NULL) return 1;
 
@@ -68,7 +68,7 @@ int compare_pid_t(const void *a, const void *b)
  * hash of a pid pointer
  * =============================================================================
  */
-ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
+static ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
 {
   if (cap <= 0 || ptr == NULL) return 1;
 
@@ -81,7 +81,7 @@ ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
  * 2nd hash of a pid pointer
  * =============================================================================
  */
-ssize_t hash_pid_2(const ssize_t cap, const void * ptr)
+static ssize_t hash_pid_2(const ssize_t cap, const void * ptr)
 {
   if (cap <= 0 || ptr == NULL) return 1;
 
@@ -94,7 +94,7 @@ ssize_t hash_pid_2(const ssize_t cap, const void * ptr)
   * displayUsage
   * =============================================================================
   */
-static void display_usage(const char* program_name){
+static void display_usage(const char * program_name){
   printf("Usage: %s <max_children (>0) > (default: unlimited)\n", program_name);
   exit(1);
 }
@@ -112,7 +112,7 @@ static void setDefaults ()
   * parseArgs
   * =============================================================================
   */
-static void parseArgs (long argc, char* const argv[]){
+static void parseArgs (const long argc, char* const argv[]){
   if (argc < 1 || argc > 2) {
     display_usage(argv[0]);
   }
@@ -138,7 +138,7 @@ static void parseArgs (long argc, char* const argv[]){
  * add_zombie
  * =================================================================
  */
-void add_zombie(child_ctx_t *ctx)
+static void add_zombie(child_ctx_t * ctx)
 {
   if (simple_list_pushback(global_zombies, (void *) ctx) == -1) 
     fprintf(stderr, "add_zombie: simple_list_pushback returned error\n");
@@ -148,9 +148,9 @@ void add_zombie(child_ctx_t *ctx)
  * add_active
  * =================================================================
  */
-void add_active(pid_t pid)
+static void add_active(const pid_t pid)
 {
-  pid_t *ptr = malloc(sizeof(pid));
+  pid_t *ptr = malloc(sizeof(pid_t));
   *ptr = pid;
   if (hashtable_add(global_active, (void *) ptr) == -1)
     fprintf(stderr, "add_active: hashtable_add returned error\n");
@@ -160,17 +160,15 @@ void add_active(pid_t pid)
  * rem_active
  * =================================================================
  */
-void rem_active()
+static void rem_active()
 {                
   pid_t pid;
-  void *ptr;
-  child_ctx_t *finished = malloc(sizeof(child_ctx_t));
-  int ret;
+  int status;
   int counter = 0; // we don't want to retry wait indefinetly
-  int successful_wait = 0;
+  int successful_wait = 0; // flag to know when to exit the cycle
 
   do {
-    pid = wait(&ret);
+    pid = wait(&status);
     counter++;
     if (pid != -1) {
       successful_wait = 1;
@@ -185,10 +183,11 @@ void rem_active()
     }
   } while (!successful_wait && counter <= MAX_WAIT_RETRIES);
 
-  finished->status_code = ret;
-
+  child_ctx_t *finished = malloc(sizeof(child_ctx_t));
+  finished->status_code = status;
   finished->pid = pid;
-  ptr = hashtable_rem(global_active, (void *) &(finished->pid));
+
+  void * ptr = hashtable_rem(global_active, (void *) &(finished->pid));
   if (ptr != NULL)
     free(ptr);
 
@@ -200,7 +199,7 @@ void rem_active()
  * print_status: transverse function
  * =================================================================
  */
-int print_status(void *arg)
+static int print_status(void *arg)
 {
   child_ctx_t *ctx = (child_ctx_t *) arg;
   printf("CHILD EXITED (PID=%d; return %sOK)\n",
@@ -266,7 +265,7 @@ static void exit_shell()
   * execute_command: service the client's request
   * =============================================================================
   */
-void execute_command(command_t cmd)
+static void execute_command(const command_t cmd)
 {
   switch (cmd.code) {
     case run_code:
@@ -299,12 +298,22 @@ int main(int argc, char** argv){
   /* Initialization */
   parseArgs(argc, (char** const)argv);
 
-
   global_zombies = simple_list_();  
 
   ssize_t init_capacity = 0;
   if (global_max_children != -1)
-    init_capacity = global_max_children;
+    init_capacity = global_max_children * 2; 
+    /* here we have a performance - memory tradeoff,
+     * where time performance is favoured
+     *
+     * if we define the initial capacity as max_children,
+     * once max_children / 2 elements are added, the hashtable is 
+     * reallocated and all the elements are inserted again 
+     * (which is quite expensive)
+     *
+     * since we know we will never insert more than global_max_children,
+     * by doubling the initial capacity, we avoid that operation
+     * entirely */
   else
     init_capacity = 1 << 8;
 

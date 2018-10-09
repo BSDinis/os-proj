@@ -7,12 +7,8 @@
 
 input_folder='../CircuitRouter-SeqSolver/inputs'
 
-for input in ${input_folder}/*.txt
+for input in ${input_folder}/*.txt.res*
 do
-  n_lines=$(cat ${input} | wc -l)
-  n_circuits=$(grep '^p' ${input} | wc -l)
-  echo == file ${input} ==
-  echo ${n_lines} lines 
-  echo ${n_circuits} connections
-  echo 
+  echo == removing file ${input} ==
+  rm ${input}
 done
