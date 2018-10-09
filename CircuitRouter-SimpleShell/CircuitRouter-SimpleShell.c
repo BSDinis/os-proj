@@ -26,7 +26,7 @@
 #include <unistd.h>
 
 #include "command.h"
-#include "lib/list.h"
+#include "lib/simple_list.h"
 
 #define SOLVER "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver"
 
@@ -42,9 +42,8 @@ typedef struct {
 
 int64_t global_max_children;
 
-child_ctx_t ** global_zombies; // finished processes
-ssize_t allocd_zombies = (1 << 8);
-ssize_t n_zombies = 0;
+
+simple_list_t global_zombies; // finished processes
 
 pid_t * global_active; // active processes (limited by global_max_children)
 ssize_t allocd_active;
@@ -132,32 +131,24 @@ void rem_active(pid_t pid)
  */
 void add_zombie(child_ctx_t *ctx)
 {
-  if (n_zombies == allocd_zombies) {
-    allocd_zombies *= 2;
-    global_zombies = realloc(global_zombies, allocd_zombies * sizeof(child_ctx_t *));
-  }
-  
-  global_zombies[n_zombies++] = ctx;
+  simple_list_pushback(global_zombies, (void *) ctx);
 }
 
 /* =================================================================
- * rem_zombie
+ * print_status: transverse function
  * =================================================================
  */
-void rem_zombie(pid_t pid)
+int print_status(void *arg)
 {
-  ssize_t i, j;
-  for (i = j = 0; i < n_zombies; i++) {
-    if (global_zombies[i]->pid == pid) {
-      free(global_zombies[i]);
-      continue;
-    }
+  child_ctx_t *ctx = (child_ctx_t *) arg;
+  printf("CHILD EXITED (PID=%d; return %sOK)\n",
+      ctx->pid,
+      (ctx->status_code == 0) ? "" : "N");
 
-    global_zombies[j++] = global_zombies[i];
-  }
-  
-  n_zombies = j;
+  free(ctx);
+  return 0;
 }
+
 
 /* =============================================================================
   * print_command_help: show comand help
@@ -212,14 +203,7 @@ static void exit_shell()
     add_zombie(finished);
   }
   
-  for (int i = 0; i < n_zombies; i++) {
-    printf("CHILD EXITED (PID=%d; return %sOK)\n",
-        global_zombies[i]->pid,
-        (global_zombies[i]->status_code == 0) ? "" : "N");
-
-    free(global_zombies[i]);
-  }
-  
+  simple_list_transverse(global_zombies, print_status);
   printf("END.\n");
 }
 
@@ -265,7 +249,7 @@ int main(int argc, char** argv){
   else
     allocd_active = 1 << 6;
 
-  global_zombies = malloc(allocd_zombies * sizeof(child_ctx_t));
+  global_zombies = simple_list_();  
   global_active = malloc(allocd_active * sizeof(pid_t));
 
   command_t cmd;
@@ -276,7 +260,7 @@ int main(int argc, char** argv){
   } while (cmd.code != exit_code);
 
   free(global_active);
-  free(global_zombies);
+  free_simple_list(global_zombies);
   exit(0);
 }
 
