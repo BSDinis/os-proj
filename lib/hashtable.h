@@ -20,9 +20,10 @@ typedef struct hashtable * hashtable_t;
 hashtable_t hashtable_(
     ssize_t init_capacity,
     ssize_t (*hash1)(ssize_t, void *),
-    ssize_t (*hash2)(ssize_t, void *)
+    ssize_t (*hash2)(ssize_t, void *),
     int (*equals)(void *, void *)
     );
+
 
 // destroy hashtable
 void free_hashtable(hashtable_t);
@@ -42,4 +43,6 @@ void * hashtable_rem(hashtable_t, void * item);
 // This depends on the hash functions given
 void * hashtable_lookup(hashtable_t, void * item);
 
+void ** get_table(struct hashtable *t) ;
+ssize_t get_capacity(struct hashtable *t) ;
 #endif // __HASHTABLE_H

@@ -17,6 +17,7 @@
 #include "hashtable.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define SENTINEL ((void *)0x1) // invalid pointer
 
@@ -33,15 +34,19 @@ struct hashtable {
 struct hashtable * hashtable_(
     ssize_t initial_size,
     ssize_t (*hash1)(ssize_t, void *),
-    ssize_t (*hash2)(ssize_t, void *)
+    ssize_t (*hash2)(ssize_t, void *),
+    int (*equals)(void *, void *)
     )
 {
   struct hashtable * t = malloc(sizeof(struct hashtable));
   t->capacity = initial_size;
+  t->size = 0;
   t->hash1 = hash1;
   t->hash2 = hash2;
+  t->equals = equals;
 
   t->table = malloc(t->capacity * sizeof(void *));
+  memset(t->table, 0, t->capacity * sizeof(void *));
 
   return t;
 }
@@ -81,6 +86,7 @@ static int hashtable_resize(struct hashtable *t)
 
   ssize_t new_capacity = t->capacity * 2;
   void **new_table = malloc(new_capacity * sizeof(void *));
+  memset(new_table, 0, new_capacity * sizeof(void *));
   if (new_table == NULL) {
     fprintf(stderr, "hashtable: resize: ran out of memory\n");
     return -1;
@@ -147,8 +153,10 @@ void * hashtable_rem(struct hashtable * t, void * item)
 
   ssize_t index = hashtable_index_lookup(t, item);
   void * rem_item = t->table[index];
-  if (rem_item != NULL)
+  if (rem_item != NULL) {
     t->table[index] = SENTINEL;
+    free(rem_item);
+  }
 
   return item;
 }
@@ -169,5 +177,15 @@ void * hashtable_lookup(struct hashtable *t, void * item)
   return t->table[hashtable_index_lookup(t, item)];
 }
 
+
+void ** get_table(struct hashtable *t) {
+  if (t == NULL) return NULL;
+  return t->table;
+}
+
+ssize_t get_capacity(struct hashtable *t) {
+  if (t == NULL) return -1;
+  return t->capacity;
+}
 
 #endif // __HASHTABLE_H
