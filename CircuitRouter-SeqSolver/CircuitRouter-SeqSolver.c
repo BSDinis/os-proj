@@ -171,17 +171,34 @@ FILE * open_out_stream(const char * const input_filename)
   FILE *fp;
   size_t input_len = strlen(input_filename);
   char * out_filename = malloc((input_len + 4 + 1) * sizeof(char));
+  if (out_filename == NULL) {
+    fprintf(stderr, "open_out_stream: malloc failed.\n");
+    return NULL;
+  }
+  
   strncpy(out_filename, input_filename, input_len + 1);
   strcat(out_filename, ".res");
-  fp = fopen(out_filename, "r");
 
+  fp = fopen(out_filename, "r");
   if (fp != NULL) {
     // renaming .res to .res.old
     fclose(fp);
     char * old_filename = malloc((input_len + 8 + 1) * sizeof(char));
+    if (old_filename == NULL) {
+      fprintf(stderr, "open_out_stream: malloc failed.\nAborting.");
+      free(out_filename);
+      return NULL;
+    }
+
     strncpy(old_filename, out_filename, input_len + 4 + 1);
     strcat(old_filename, ".old");
-    rename(out_filename, old_filename);
+    if (rename(out_filename, old_filename) == -1) {
+      perror("open_out_stream: rename");
+      free(old_filename);
+      free(out_filename);
+      return NULL;
+    }
+    
     free(old_filename);
   }
 
@@ -208,6 +225,8 @@ int main(int argc, char** argv){
   assert(mazePtr);
 
   FILE * out_stream = open_out_stream(global_inputFile);
+  assert(out_stream);
+  
   long numPathToRoute = maze_read(mazePtr, global_inputFile, out_stream);
   router_t* routerPtr = router_alloc(global_params[PARAM_XCOST],
                     global_params[PARAM_YCOST],
@@ -232,7 +251,7 @@ int main(int argc, char** argv){
   while (list_iter_hasNext(&it, pathVectorListPtr)) {
     vector_t* pathVectorPtr = (vector_t*)list_iter_next(&it, pathVectorListPtr);
     numPathRouted += vector_getSize(pathVectorPtr);
-	}
+  }
   fprintf(out_stream, "Paths routed  = %li\n", numPathRouted);
   fprintf(out_stream, "Elapsed time  = %f seconds\n", TIMER_DIFF_SECONDS(startTime, stopTime));
 
