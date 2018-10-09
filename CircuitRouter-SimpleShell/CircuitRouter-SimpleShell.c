@@ -54,7 +54,7 @@ hashtable_t global_active; // active processes (limited by global_max_children)
  * compare pid pointers
  * =============================================================================
  */
-int compare_pid_t(const void *a, const void *b)
+static int compare_pid_t(const void *a, const void *b)
 {
   if (a == NULL || b == NULL) return 1;
 
@@ -68,7 +68,7 @@ int compare_pid_t(const void *a, const void *b)
  * hash of a pid pointer
  * =============================================================================
  */
-ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
+static ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
 {
   if (cap <= 0 || ptr == NULL) return 1;
 
@@ -81,7 +81,7 @@ ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
  * 2nd hash of a pid pointer
  * =============================================================================
  */
-ssize_t hash_pid_2(const ssize_t cap, const void * ptr)
+static ssize_t hash_pid_2(const ssize_t cap, const void * ptr)
 {
   if (cap <= 0 || ptr == NULL) return 1;
 
@@ -138,7 +138,7 @@ static void parseArgs (const long argc, char* const argv[]){
  * add_zombie
  * =================================================================
  */
-void add_zombie(child_ctx_t * ctx)
+static void add_zombie(child_ctx_t * ctx)
 {
   if (simple_list_pushback(global_zombies, (void *) ctx) == -1) 
     fprintf(stderr, "add_zombie: simple_list_pushback returned error\n");
@@ -148,7 +148,7 @@ void add_zombie(child_ctx_t * ctx)
  * add_active
  * =================================================================
  */
-void add_active(const pid_t pid)
+static void add_active(const pid_t pid)
 {
   pid_t *ptr = malloc(sizeof(pid_t));
   *ptr = pid;
@@ -160,7 +160,7 @@ void add_active(const pid_t pid)
  * rem_active
  * =================================================================
  */
-void rem_active()
+static void rem_active()
 {                
   pid_t pid;
   int status;
@@ -199,7 +199,7 @@ void rem_active()
  * print_status: transverse function
  * =================================================================
  */
-int print_status(void *arg)
+static int print_status(void *arg)
 {
   child_ctx_t *ctx = (child_ctx_t *) arg;
   printf("CHILD EXITED (PID=%d; return %sOK)\n",
@@ -263,7 +263,7 @@ static void exit_shell()
   * execute_command: service the client's request
   * =============================================================================
   */
-void execute_command(const command_t cmd)
+static void execute_command(const command_t cmd)
 {
   switch (cmd.code) {
     case run_code:
