@@ -73,6 +73,7 @@ static int hashtable_add_table(void ** table, const ssize_t capacity, ssize_t in
 {
   while (table[index] != NULL && table[index] != SENTINEL) {
     index += step;
+    index %= capacity;
   }
   table[index] = item;
   return 0;
