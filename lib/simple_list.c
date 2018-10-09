@@ -14,6 +14,7 @@
 
 #include "simple_list.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 struct node {
   void *item;

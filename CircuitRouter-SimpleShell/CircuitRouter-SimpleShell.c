@@ -140,8 +140,10 @@ static void parseArgs (const long argc, char* const argv[]){
  */
 static void add_zombie(child_ctx_t * ctx)
 {
-  if (simple_list_pushback(global_zombies, (void *) ctx) == -1) 
-    fprintf(stderr, "add_zombie: simple_list_pushback returned error\n");
+  if (simple_list_pushback(global_zombies, (void *) ctx) == -1)  {
+    fprintf(stderr, "add_zombie: simple_list_pushback returned error\n. Aborting.");
+    abort();
+  }
 }
 
 /* =================================================================
@@ -152,8 +154,10 @@ static void add_active(const pid_t pid)
 {
   pid_t *ptr = malloc(sizeof(pid_t));
   *ptr = pid;
-  if (hashtable_add(global_active, (void *) ptr) == -1)
-    fprintf(stderr, "add_active: hashtable_add returned error\n");
+  if (hashtable_add(global_active, (void *) ptr) == -1) {
+    fprintf(stderr, "add_active: hashtable_add returned error.\nAborting\n");
+    abort();
+  }
 }
 
 /* =================================================================
@@ -176,6 +180,7 @@ static void rem_active()
     else if (errno == ECHILD) {
       successful_wait = 1;
       fprintf(stderr, "rem_active: called wait on childless process.\nAborting\n");
+      abort();
     }
     else if (errno == EINTR) {
       perror("rem_active");
@@ -229,11 +234,9 @@ static void print_command_help()
   */
 static void run_solver(const char *inputfile)
 {
-  printf("processes %ld / %ld\n", hashtable_size(global_active), global_max_children);
   if (global_max_children != -1 
       && hashtable_size(global_active) == global_max_children) {
     rem_active();
-    printf("freed one process: processes %ld / %ld\n", hashtable_size(global_active), global_max_children);
   }
   
   pid_t cid = fork();
@@ -244,6 +247,12 @@ static void run_solver(const char *inputfile)
       exit(-2);
     }
   }
+  else if (cid == -1) {
+    // error
+    perror("run_solver: fork");
+    exit(-2);
+  }
+  
   add_active(cid);
 }
 
@@ -299,7 +308,11 @@ int main(int argc, char** argv){
   parseArgs(argc, (char** const)argv);
 
   global_zombies = simple_list_();  
-
+  if (global_zombies == NULL) {
+    fprintf(stderr, "failed to initialize zombie list. aborting\n");
+    return -1;
+  }
+  
   ssize_t init_capacity = 0;
   if (global_max_children != -1)
     init_capacity = global_max_children * 2; 
@@ -322,6 +335,12 @@ int main(int argc, char** argv){
       hash_pid_2,
       compare_pid_t);
 
+  if (global_active == NULL) {
+    fprintf(stderr, "failed to initialize zombie list. aborting\n");
+    free_simple_list(global_zombies);
+    return -1;
+  }
+  
   command_t cmd;
   do {
     cmd = get_command();
