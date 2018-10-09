@@ -29,7 +29,7 @@ endif
 # TARGETS is the target executable
 SOURCES = $(wildcard *.c)
 OBJECTS = $(SOURCES:.c=.o)
-TARGETS = test_simple_list
+TARGETS = $(basename $(SOURCES))
 
 # depend creates autodep, which parses the files and
 # creates rules based on their dependencies
@@ -42,7 +42,8 @@ all: depend utils $(TARGETS)
 utils:
 	@make -C ../lib
 
-$(TARGETS): $(OBJECTS) 
+test_simple_list: test_simple_list.o
+test_hashtable: test_hashtable.o
 
 -include autodep
 
