@@ -230,9 +230,11 @@ static void print_command_help()
   */
 static void run_solver(const char *inputfile)
 {
+  printf("processes %ld / %ld\n", hashtable_size(global_active), global_max_children);
   if (global_max_children != -1 
       && hashtable_size(global_active) == global_max_children) {
     rem_active();
+    printf("freed one process: processes %ld / %ld\n", hashtable_size(global_active), global_max_children);
   }
   
   pid_t cid = fork();
