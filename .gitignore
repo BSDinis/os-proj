@@ -2,6 +2,7 @@
 autodep
 CircuitRouter-SeqSolver/CircuitRouter-SeqSolver
 CircuitRouter-SimpleShell/CircuitRouter-SimpleShell
+test_simple_list
 *.a
 .*
 *.md
