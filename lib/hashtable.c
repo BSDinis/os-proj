@@ -38,7 +38,17 @@ struct hashtable * hashtable_(
     int (*equals)(const void *, const void *)
     )
 {
+  if (initial_size <= 0 
+      || hash1 == NULL 
+      || hash2 == NULL 
+      || equals == NULL ) return NULL;
   struct hashtable * t = malloc(sizeof(struct hashtable));
+
+  if (t == NULL) {
+    fprintf(stderr, "hashtable_: malloc failed\n");
+    return NULL;
+  }
+  
   t->capacity = initial_size;
   t->size = 0;
   t->hash1 = hash1;
@@ -46,6 +56,12 @@ struct hashtable * hashtable_(
   t->equals = equals;
 
   t->table = malloc(t->capacity * sizeof(void *));
+  if (t->table == NULL) {
+    fprintf(stderr, "hashtable_: malloc failed\n");
+    free(t);
+    return NULL;
+  }
+  
   memset(t->table, 0, t->capacity * sizeof(void *));
 
   return t;
@@ -53,8 +69,11 @@ struct hashtable * hashtable_(
 
 
 // lookup by index
-static int hashtable_index_lookup(const struct hashtable *t, const void * item)
+static ssize_t hashtable_index_lookup(const struct hashtable *t, const void * item)
 {
+  if (t == NULL || item == NULL) 
+    return -1;
+
   ssize_t index = t->hash1(t->capacity, item);
   const ssize_t step = t->hash2(t->capacity, item);
 
@@ -71,11 +90,19 @@ static int hashtable_index_lookup(const struct hashtable *t, const void * item)
 // add to table 
 static int hashtable_add_table(void ** table, const ssize_t capacity, ssize_t index, const ssize_t step, void * item)
 {
+  if (table == NULL ||
+      capacity <= 0 ||
+      index < 0 ||
+      index >= capacity ||
+      item == NULL)
+    return -1;
+
   while (table[index] != NULL && table[index] != SENTINEL) {
     index += step;
     index %= capacity;
   }
   table[index] = item;
+
   return 0;
 }
 
@@ -87,18 +114,24 @@ static int hashtable_resize(struct hashtable *t)
 
   ssize_t new_capacity = t->capacity * 2;
   void **new_table = malloc(new_capacity * sizeof(void *));
-  memset(new_table, 0, new_capacity * sizeof(void *));
+
   if (new_table == NULL) {
-    fprintf(stderr, "hashtable: resize: ran out of memory\n");
+    fprintf(stderr, "hashtable_resize: malloc failed\n");
     return -1;
   }
+
+  memset(new_table, 0, new_capacity * sizeof(void *));
   
   for (ssize_t i = 0; i < t->capacity; i++) {
     if (t->table[i] != NULL && t->table[i] != SENTINEL) {
       void * item = t->table[i];
       ssize_t index = t->hash1(new_capacity, item);
       ssize_t step = t->hash2(new_capacity, item);
-      hashtable_add_table(new_table, new_capacity, index, step, item);
+
+      if (hashtable_add_table(new_table, new_capacity, index, step, item) == -1) {
+        free(new_table);
+        return -1;
+      }
     }
   }
 
@@ -139,7 +172,9 @@ int hashtable_add(struct hashtable *t, void * item)
   ssize_t index = t->hash1(t->capacity, item);
   ssize_t step = t->hash2(t->capacity, item);
 
-  hashtable_add_table(t->table, t->capacity, index, step, item);
+  if (hashtable_add_table(t->table, t->capacity, index, step, item) == -1) {
+    return -1;
+  }
 
   t->size++;
   return 0;
@@ -153,6 +188,8 @@ void * hashtable_rem(struct hashtable * t, void * item)
     return NULL;
 
   ssize_t index = hashtable_index_lookup(t, item);
+  if (index < 0) 
+    return NULL;
 
   void * rem_item = t->table[index];
   if (rem_item != NULL) {
@@ -176,7 +213,11 @@ void * hashtable_lookup(const struct hashtable *t, const void * item)
   if (t == NULL || item == NULL)
     return NULL;
 
-  return t->table[hashtable_index_lookup(t, item)];
+  ssize_t index = hashtable_index_lookup(t, item);
+  if (index == -1) 
+    return NULL;
+
+  return t->table[index];
 }
 
 
