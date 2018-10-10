@@ -4,7 +4,7 @@
  *
  * =============================================================================
  *
- * Copyright (C) Stanford University, 2006.  All Rights Reserved.
+ * Copyright (C) Stanford University, 2006. All Rights Reserved.
  * Author: Chi Cao Minh
  *
  * =============================================================================
@@ -41,17 +41,17 @@
  * modification, are permitted provided that the following conditions are
  * met:
  * 
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
+ *   * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  * 
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
  * 
- *     * Neither the name of Stanford University nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *   * Neither the name of Stanford University nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY STANFORD UNIVERSITY ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -81,15 +81,15 @@
 pair_t*
 pair_alloc (void* firstPtr, void* secondPtr)
 {
-    pair_t* pairPtr;
+  pair_t* pairPtr;
 
-    pairPtr = (pair_t*)malloc(sizeof(pair_t));
-    if (pairPtr != NULL) {
-        pairPtr->firstPtr = firstPtr;
-        pairPtr->secondPtr = secondPtr;
-    }
+  pairPtr = (pair_t*)malloc(sizeof(pair_t));
+  if (pairPtr != NULL) {
+    pairPtr->firstPtr = firstPtr;
+    pairPtr->secondPtr = secondPtr;
+  }
 
-    return pairPtr;
+  return pairPtr;
 }
 
 
@@ -100,7 +100,7 @@ pair_alloc (void* firstPtr, void* secondPtr)
 void
 pair_free (pair_t* pairPtr)
 {
-    free(pairPtr);
+  free(pairPtr);
 }
 
 
@@ -112,9 +112,9 @@ pair_free (pair_t* pairPtr)
 void
 pair_swap (pair_t* pairPtr)
 {
-    void* tmpPtr = pairPtr->firstPtr;
-    pairPtr->firstPtr = pairPtr->secondPtr;
-    pairPtr->secondPtr = tmpPtr;
+  void* tmpPtr = pairPtr->firstPtr;
+  pairPtr->firstPtr = pairPtr->secondPtr;
+  pairPtr->secondPtr = tmpPtr;
 }
 
 
@@ -132,30 +132,30 @@ pair_swap (pair_t* pairPtr)
 int
 main ()
 {
-    pair_t* pairPtr;
+  pair_t* pairPtr;
 
-    puts("Starting...");
+  puts("Starting...");
 
-    pairPtr = pair_alloc((void*)1, (void*)2);
+  pairPtr = pair_alloc((void*)1, (void*)2);
 
-    assert((long)pairPtr->firstPtr == 1);
-    assert((long)pairPtr->secondPtr == 2);
+  assert((long)pairPtr->firstPtr == 1);
+  assert((long)pairPtr->secondPtr == 2);
 
-    pair_swap(pairPtr);
+  pair_swap(pairPtr);
 
-    assert((long)pairPtr->firstPtr == 2);
-    assert((long)pairPtr->secondPtr == 1);
+  assert((long)pairPtr->firstPtr == 2);
+  assert((long)pairPtr->secondPtr == 1);
 
-    pair_swap(pairPtr);
+  pair_swap(pairPtr);
 
-    assert((long)pairPtr->firstPtr == 1);
-    assert((long)pairPtr->secondPtr == 2);
+  assert((long)pairPtr->firstPtr == 1);
+  assert((long)pairPtr->secondPtr == 2);
 
-    pair_free(pairPtr);
+  pair_free(pairPtr);
 
-    puts("All tests passed.");
+  puts("All tests passed.");
 
-    return 0;
+  return 0;
 }
 
 

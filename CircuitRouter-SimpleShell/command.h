@@ -1,0 +1,34 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *
+ * defines the command datatype
+ *
+ * a command can be either run (0) or exit (1), with -1 indicating error
+ * =============================================================================
+ * command.h
+ * =============================================================================
+ */
+
+#ifndef __COMMAND_H
+#define __COMMAND_H
+
+/* command codes */
+enum {
+  run_code = 0,
+  exit_code = 1,
+  invalid_code = -1
+};
+
+typedef struct {
+  int code;
+  char * inputfile;
+} command_t;
+
+/* get a command from stdin (displays prompt)*/
+command_t get_command();
+
+/* print a command (debug)*/
+void print_command(command_t);
+
+/* free a command's internal memory */
+void free_command(command_t cmd);
+#endif // ! __COMMAND_H
