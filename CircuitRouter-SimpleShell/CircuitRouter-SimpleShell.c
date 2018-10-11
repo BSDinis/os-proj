@@ -174,6 +174,8 @@ static void rem_active()
   do {
     pid = wait(&status);
     counter++;
+    int _errno = errno; // push errno
+    errno = 0;
     if (pid != -1) {
       successful_wait = 1;
     }
@@ -186,6 +188,7 @@ static void rem_active()
       perror("rem_active");
       fprintf(stderr, "Retrying (%d)\n", counter);
     }
+    errno = _errno; // pop errno
   } while (!successful_wait && counter <= MAX_WAIT_RETRIES);
 
   child_ctx_t *finished = malloc(sizeof(child_ctx_t));
