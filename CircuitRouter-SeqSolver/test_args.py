@@ -47,4 +47,5 @@ def run():
   os.system(cmd)
 
 cmd = 'valgrind ./CircuitRouter-SeqSolver'+genRand()
+print(cmd)
 os.system(cmd)
