@@ -153,6 +153,11 @@ static void add_zombie(child_ctx_t * ctx)
 static void add_active(const pid_t pid)
 {
   pid_t *ptr = malloc(sizeof(pid_t));
+  if (ptr == NULL) {
+    perror("add_active: malloc");
+    exit(-2);
+  }
+  
   *ptr = pid;
   if (hashtable_add(global_active, (void *) ptr) == -1) {
     fprintf(stderr, "add_active: hashtable_add returned error.\nAborting\n");
@@ -192,6 +197,11 @@ static void rem_active()
   } while (!successful_wait && counter <= MAX_WAIT_RETRIES);
 
   child_ctx_t *finished = malloc(sizeof(child_ctx_t));
+  if (finished == NULL) {
+    perror("rem_active: malloc");
+    exit(-2);
+  }
+  
   finished->status_code = status;
   finished->pid = pid;
 
@@ -253,7 +263,6 @@ static void run_solver(const char *inputfile)
   else if (cid == -1) {
     // error
     perror("run_solver: fork");
-    exit(-2);
   }
   
   add_active(cid);
@@ -348,7 +357,6 @@ int main(int argc, char** argv){
   do {
     cmd = get_command();
     execute_command(cmd);
-    free_command(cmd);
   } while (cmd.code != exit_code);
 
   free_hashtable(global_active);
