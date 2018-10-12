@@ -29,7 +29,7 @@ static command_t parse_command(char **argv, int argc)
 {
   command_t cmd;
   cmd.code = invalid_code;
-  cmd.inputfile = NULL;
+  cmd.has_inputfile = 0;
 
   if (argv == NULL || argc <= 0)
     return cmd;
@@ -38,15 +38,10 @@ static command_t parse_command(char **argv, int argc)
     // if it is a run command, then there are exactly two arguments
     if (argc == 2) {
       size_t len = strlen(argv[1]);
+      len = (len > MAXFILENAMESIZE) ? MAXFILENAMESIZE : len;
       cmd.code = run_code;
-      cmd.inputfile = malloc((len + 1) * sizeof(char)); 
-      if (cmd.inputfile == NULL) {
-        fprintf(stderr, "parse_command: failed to initialize memory for inputfile\n");
-        cmd.code = invalid_code;
-      }
-      else {
-        strncpy(cmd.inputfile, argv[1], len + 1);
-      }
+      cmd.has_inputfile = 1;
+      strncpy(cmd.inputfile, argv[1], len + 1);
     }
   }
   else if (strncmp(argv[0], "exit", 5) == 0) {
@@ -69,8 +64,8 @@ command_t get_command()
   int argc;
   char buffer[MAXLINESIZE + 1] = { 0 };
   int max_argc = 2; // run has two args
-  char **argv = malloc((max_argc + 1) * sizeof(char *));
-
+  char *argv[max_argc + 1];
+  
   argc = readLineArguments(argv, max_argc + 1, buffer, MAXLINESIZE);
   if (argc < 0) {
     fprintf(stderr, "get_command: error reading from the line\n");
@@ -78,21 +73,8 @@ command_t get_command()
   }
 
   cmd = parse_command(argv, argc);
-  free(argv);
 
   return cmd;
-}
-
-
-/** 
- * free command
- */
-void free_command(command_t cmd)
-{
-  if (cmd.code == run_code && cmd.inputfile != NULL) {
-    free(cmd.inputfile);
-    cmd.inputfile = NULL;
-  }
 }
 
 
