@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 import random
 from datetime import datetime
@@ -39,16 +40,11 @@ def genRand():
 
   return res
 
-
-
-for i in range(10):
-  cmd = './CircuitRouter-SeqSolver'+genRand()
-  print('\n' + cmd + '\n\n\n\n')
+def run():
+  for i in range(10):
+    cmd = './CircuitRouter-SeqSolver'+genRand()
+    print('\n' + cmd + '\n\n\n\n')
   os.system(cmd)
 
-
-
-      
-
-
-
+cmd = 'valgrind ./CircuitRouter-SeqSolver'+genRand()
+os.system(cmd)
