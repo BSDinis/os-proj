@@ -87,13 +87,13 @@ long global_params[256]; /* 256 = ascii limit */
  * =============================================================================
  */
 static void displayUsage (const char* appName){
-  printf("Usage: %s [options] <filename>\n", appName);
-  puts("\nOptions:                    (defaults)\n");
-  printf("  b       <INT>  [b]end cost     (%i)\n", PARAM_DEFAULT_BENDCOST);
-  printf("  x       <UINT>  [x] movement cost  (%i)\n", PARAM_DEFAULT_XCOST);
-  printf("  y       <UINT>  [y] movement cost  (%i)\n", PARAM_DEFAULT_YCOST);
-  printf("  z       <UINT>  [z] movement cost  (%i)\n", PARAM_DEFAULT_ZCOST);
-  printf("  h           [h]elp message    (false)\n");
+  fprintf(stderr, "Usage: %s [options] <filename>\n", appName);
+  fputs("\nOptions:                    (defaults)\n", stderr);
+  fprintf(stderr, "  b       <INT>  [b]end cost     (%i)\n", PARAM_DEFAULT_BENDCOST);
+  fprintf(stderr, "  x       <UINT>  [x] movement cost  (%i)\n", PARAM_DEFAULT_XCOST);
+  fprintf(stderr, "  y       <UINT>  [y] movement cost  (%i)\n", PARAM_DEFAULT_YCOST);
+  fprintf(stderr, "  z       <UINT>  [z] movement cost  (%i)\n", PARAM_DEFAULT_ZCOST);
+  fprintf(stderr, "  h           [h]elp message    (false)\n");
   exit(1);
 }
 
@@ -170,11 +170,7 @@ FILE * open_out_stream(const char * const input_filename)
 {
   FILE *fp;
   size_t input_len = strlen(input_filename);
-  char * out_filename = malloc((input_len + 4 + 1) * sizeof(char));
-  if (out_filename == NULL) {
-    fprintf(stderr, "open_out_stream: malloc failed.\n");
-    return NULL;
-  }
+  char out_filename[(input_len + 4 + 1)];
   
   strncpy(out_filename, input_filename, input_len + 1);
   strcat(out_filename, ".res");
@@ -183,27 +179,17 @@ FILE * open_out_stream(const char * const input_filename)
   if (fp != NULL) {
     // renaming .res to .res.old
     fclose(fp);
-    char * old_filename = malloc((input_len + 8 + 1) * sizeof(char));
-    if (old_filename == NULL) {
-      fprintf(stderr, "open_out_stream: malloc failed.\nAborting.");
-      free(out_filename);
-      return NULL;
-    }
+    char old_filename[(input_len + 8 + 1)];
 
     strncpy(old_filename, out_filename, input_len + 4 + 1);
     strcat(old_filename, ".old");
     if (rename(out_filename, old_filename) == -1) {
       perror("open_out_stream: rename");
-      free(old_filename);
-      free(out_filename);
       return NULL;
     }
-    
-    free(old_filename);
   }
 
   fp = fopen(out_filename, "w");
-  free(out_filename);
   if (fp == NULL) {
     perror("open_out_stream: fopen");
     exit(1);
