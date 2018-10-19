@@ -10,3 +10,5 @@ test_hashtable
 *.txt
 *.res
 *.old
+vgcore*
+*.zip
