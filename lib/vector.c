@@ -4,7 +4,7 @@
  *
  * =============================================================================
  *
- * Copyright (C) Stanford University, 2006.  All Rights Reserved.
+ * Copyright (C) Stanford University, 2006. All Rights Reserved.
  * Author: Chi Cao Minh
  *
  * =============================================================================
@@ -41,17 +41,17 @@
  * modification, are permitted provided that the following conditions are
  * met:
  * 
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
+ *   * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  * 
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
  * 
- *     * Neither the name of Stanford University nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *   * Neither the name of Stanford University nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  * 
  * THIS SOFTWARE IS PROVIDED BY STANFORD UNIVERSITY ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -84,21 +84,21 @@
 vector_t*
 vector_alloc (long initCapacity)
 {
-    vector_t* vectorPtr;
-    long capacity = MAX(initCapacity, 1);
+  vector_t* vectorPtr;
+  long capacity = MAX(initCapacity, 1);
 
-    vectorPtr = (vector_t*)malloc(sizeof(vector_t));
+  vectorPtr = (vector_t*)malloc(sizeof(vector_t));
 
-    if (vectorPtr != NULL) {
-        vectorPtr->size = 0;
-        vectorPtr->capacity = capacity;
-        vectorPtr->elements = (void**)malloc(capacity * sizeof(void*));
-        if (vectorPtr->elements == NULL) {
-            return NULL;
-        }
+  if (vectorPtr != NULL) {
+    vectorPtr->size = 0;
+    vectorPtr->capacity = capacity;
+    vectorPtr->elements = (void**)malloc(capacity * sizeof(void*));
+    if (vectorPtr->elements == NULL) {
+      return NULL;
     }
+  }
 
-    return vectorPtr;
+  return vectorPtr;
 }
 
 
@@ -109,8 +109,8 @@ vector_alloc (long initCapacity)
 void
 vector_free (vector_t* vectorPtr)
 {
-    free(vectorPtr->elements);
-    free(vectorPtr);
+  free(vectorPtr->elements);
+  free(vectorPtr);
 }
 
 
@@ -122,11 +122,11 @@ vector_free (vector_t* vectorPtr)
 void*
 vector_at (vector_t* vectorPtr, long i)
 {
-    if ((i < 0) || (i >= vectorPtr->size)) {
-        return NULL;
-    }
+  if ((i < 0) || (i >= vectorPtr->size)) {
+    return NULL;
+  }
 
-    return (vectorPtr->elements[i]);
+  return (vectorPtr->elements[i]);
 }
 
 
@@ -138,24 +138,24 @@ vector_at (vector_t* vectorPtr, long i)
 bool_t
 vector_pushBack (vector_t* vectorPtr, void* dataPtr)
 {
-    if (vectorPtr->size == vectorPtr->capacity) {
-        long i;
-        long newCapacity = vectorPtr->capacity * 2;
-        void** newElements = (void**)malloc(newCapacity * sizeof(void*));
-        if (newElements == NULL) {
-            return FALSE;
-        }
-        vectorPtr->capacity = newCapacity;
-        for (i = 0; i < vectorPtr->size; i++) {
-            newElements[i] = vectorPtr->elements[i];
-        }
-        free(vectorPtr->elements);
-        vectorPtr->elements = newElements;
+  if (vectorPtr->size == vectorPtr->capacity) {
+    long i;
+    long newCapacity = vectorPtr->capacity * 2;
+    void** newElements = (void**)malloc(newCapacity * sizeof(void*));
+    if (newElements == NULL) {
+      return FALSE;
     }
+    vectorPtr->capacity = newCapacity;
+    for (i = 0; i < vectorPtr->size; i++) {
+      newElements[i] = vectorPtr->elements[i];
+    }
+    free(vectorPtr->elements);
+    vectorPtr->elements = newElements;
+  }
 
-    vectorPtr->elements[vectorPtr->size++] = dataPtr;
+  vectorPtr->elements[vectorPtr->size++] = dataPtr;
 
-    return TRUE;
+  return TRUE;
 }
 
 
@@ -167,11 +167,11 @@ vector_pushBack (vector_t* vectorPtr, void* dataPtr)
 void*
 vector_popBack (vector_t* vectorPtr)
 {
-    if (vectorPtr->size < 1) {
-        return NULL;
-    }
+  if (vectorPtr->size < 1) {
+    return NULL;
+  }
 
-    return (vectorPtr->elements[--(vectorPtr->size)]);
+  return (vectorPtr->elements[--(vectorPtr->size)]);
 }
 
 
@@ -182,7 +182,7 @@ vector_popBack (vector_t* vectorPtr)
 long
 vector_getSize (vector_t* vectorPtr)
 {
-    return (vectorPtr->size);
+  return (vectorPtr->size);
 }
 
 
@@ -193,7 +193,7 @@ vector_getSize (vector_t* vectorPtr)
 void
 vector_clear (vector_t* vectorPtr)
 {
-    vectorPtr->size = 0;
+  vectorPtr->size = 0;
 }
 
 
@@ -204,7 +204,7 @@ vector_clear (vector_t* vectorPtr)
 void
 vector_sort (vector_t* vectorPtr, int (*compare) (const void*, const void*))
 {
-    qsort((void*)vectorPtr->elements, vectorPtr->size, sizeof(void**), compare);
+  qsort((void*)vectorPtr->elements, vectorPtr->size, sizeof(void**), compare);
 }
 
 
@@ -215,25 +215,25 @@ vector_sort (vector_t* vectorPtr, int (*compare) (const void*, const void*))
 bool_t
 vector_copy (vector_t* dstVectorPtr, vector_t* srcVectorPtr)
 {
-    long dstCapacity = dstVectorPtr->capacity;
-    long srcSize = srcVectorPtr->size;
-    if (dstCapacity < srcSize) {
-        long srcCapacity = srcVectorPtr->capacity;
-        void** elements = (void**)malloc(srcCapacity * sizeof(void*));
-        if (elements == NULL) {
-            return FALSE;
-        }
-        free(dstVectorPtr->elements);
-        dstVectorPtr->elements = elements;
-        dstVectorPtr->capacity = srcCapacity;
+  long dstCapacity = dstVectorPtr->capacity;
+  long srcSize = srcVectorPtr->size;
+  if (dstCapacity < srcSize) {
+    long srcCapacity = srcVectorPtr->capacity;
+    void** elements = (void**)malloc(srcCapacity * sizeof(void*));
+    if (elements == NULL) {
+      return FALSE;
     }
+    free(dstVectorPtr->elements);
+    dstVectorPtr->elements = elements;
+    dstVectorPtr->capacity = srcCapacity;
+  }
 
-    memcpy(dstVectorPtr->elements,
-           srcVectorPtr->elements,
-           (srcSize * sizeof(void*)));
-    dstVectorPtr->size = srcSize;
+  memcpy(dstVectorPtr->elements,
+      srcVectorPtr->elements,
+      (srcSize * sizeof(void*)));
+  dstVectorPtr->size = srcSize;
 
-    return TRUE;
+  return TRUE;
 }
 
 
@@ -249,31 +249,31 @@ vector_copy (vector_t* dstVectorPtr, vector_t* srcVectorPtr)
 static void
 printVector (vector_t* vectorPtr)
 {
-    long i;
-    long size = vector_getSize(vectorPtr);
+  long i;
+  long size = vector_getSize(vectorPtr);
 
-    printf("[");
-    for (i = 0; i < size; i++) {
-        printf("%li ", *((long*)vector_at(vectorPtr, i)));
-    }
-    puts("]");
+  printf("[");
+  for (i = 0; i < size; i++) {
+    printf("%li ", *((long*)vector_at(vectorPtr, i)));
+  }
+  puts("]");
 }
 
 
 static void
 insertInt (vector_t* vectorPtr, long* data)
 {
-    printf("Inserting: %li\n", *data);
-    vector_pushBack(vectorPtr, (void*)data);
-    printVector(vectorPtr);
+  printf("Inserting: %li\n", *data);
+  vector_pushBack(vectorPtr, (void*)data);
+  printVector(vectorPtr);
 }
 
 
 static void
 removeInt (vector_t* vectorPtr)
 {
-    printf("Removing: %li\n", *((long*)vector_popBack(vectorPtr)));
-    printVector(vectorPtr);
+  printf("Removing: %li\n", *((long*)vector_popBack(vectorPtr)));
+  printVector(vectorPtr);
 
 }
 
@@ -281,48 +281,48 @@ removeInt (vector_t* vectorPtr)
 static int
 compareInt (const void* aPtr, const void* bPtr)
 {
-    long a = *((long*)(*(void**)aPtr));
-    long b = *((long*)(*(void**)bPtr));
+  long a = *((long*)(*(void**)aPtr));
+  long b = *((long*)(*(void**)bPtr));
 
-    return (a - b);
+  return (a - b);
 }
 
 
 int
 main ()
 {
-    vector_t* vectorPtr;
-    vector_t* copyVectorPtr;
-    long data[] = {3, 1, 4, 1, 5, -1};
-    long i;
+  vector_t* vectorPtr;
+  vector_t* copyVectorPtr;
+  long data[] = {3, 1, 4, 1, 5, -1};
+  long i;
 
-    puts("Starting...");
+  puts("Starting...");
 
-    vectorPtr = vector_alloc(1);
-    copyVectorPtr = vector_alloc(1);
+  vectorPtr = vector_alloc(1);
+  copyVectorPtr = vector_alloc(1);
 
-    for (i = 0; data[i] >= 0; i++) {
-        insertInt(vectorPtr, &data[i]);
-    }
+  for (i = 0; data[i] >= 0; i++) {
+    insertInt(vectorPtr, &data[i]);
+  }
 
-    vector_copy(copyVectorPtr, vectorPtr);
+  vector_copy(copyVectorPtr, vectorPtr);
 
-    while (i-- > 0) {
-        removeInt(vectorPtr);
-    }
+  while (i-- > 0) {
+    removeInt(vectorPtr);
+  }
 
-    printf("copy ");
-    printVector(copyVectorPtr);
-    printf("sort ");
-    vector_sort(copyVectorPtr, &compareInt);
-    printVector(copyVectorPtr);
+  printf("copy ");
+  printVector(copyVectorPtr);
+  printf("sort ");
+  vector_sort(copyVectorPtr, &compareInt);
+  printVector(copyVectorPtr);
 
-    vector_free(vectorPtr);
-    vector_free(copyVectorPtr);
+  vector_free(vectorPtr);
+  vector_free(copyVectorPtr);
 
-    puts("Done.");
+  puts("Done.");
 
-    return 0;
+  return 0;
 }
 
 

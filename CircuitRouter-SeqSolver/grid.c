@@ -4,8 +4,8 @@
  *
  * The original copyright notice is included below.
  *
-  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * Copyright (C) Stanford University, 2006.  All Rights Reserved.
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * Copyright (C) Stanford University, 2006. All Rights Reserved.
  * Author: Chi Cao Minh
  *
  * =============================================================================
@@ -19,17 +19,17 @@
  * modification, are permitted provided that the following conditions are
  * met:
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
+ *   * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
  *
- *     * Neither the name of Stanford University nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
+ *   * Neither the name of Stanford University nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY STANFORD UNIVERSITY ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -68,24 +68,24 @@ const unsigned long CACHE_LINE_SIZE = 32UL;
  * =============================================================================
  */
 grid_t* grid_alloc (long width, long height, long depth){
-    grid_t* gridPtr;
+  grid_t* gridPtr;
 
-    gridPtr = (grid_t*)malloc(sizeof(grid_t));
-    if (gridPtr) {
-        gridPtr->width  = width;
-        gridPtr->height = height;
-        gridPtr->depth  = depth;
-        long n = width * height * depth;
-        long* points_unaligned = (long*)malloc(n * sizeof(long) + CACHE_LINE_SIZE);
-        assert(points_unaligned);
-        gridPtr->points_unaligned = points_unaligned;
-        gridPtr->points = (long*)((char*)(((unsigned long)points_unaligned
-                                          & ~(CACHE_LINE_SIZE-1)))
-                                  + CACHE_LINE_SIZE);
-        memset(gridPtr->points, GRID_POINT_EMPTY, (n * sizeof(long)));
-    }
+  gridPtr = (grid_t*)malloc(sizeof(grid_t));
+  if (gridPtr) {
+    gridPtr->width = width;
+    gridPtr->height = height;
+    gridPtr->depth = depth;
+    long n = width * height * depth;
+    long* points_unaligned = (long*)malloc(n * sizeof(long) + CACHE_LINE_SIZE);
+    assert(points_unaligned);
+    gridPtr->points_unaligned = points_unaligned;
+    gridPtr->points = (long*)((char*)(((unsigned long)points_unaligned
+                     & ~(CACHE_LINE_SIZE-1)))
+                 + CACHE_LINE_SIZE);
+    memset(gridPtr->points, GRID_POINT_EMPTY, (n * sizeof(long)));
+  }
 
-    return gridPtr;
+  return gridPtr;
 }
 
 /* =============================================================================
@@ -93,8 +93,8 @@ grid_t* grid_alloc (long width, long height, long depth){
  * =============================================================================
  */
 void grid_free (grid_t* gridPtr){
-    free(gridPtr->points_unaligned);
-    free(gridPtr);
+  free(gridPtr->points_unaligned);
+  free(gridPtr);
 }
 
 
@@ -103,12 +103,12 @@ void grid_free (grid_t* gridPtr){
  * =============================================================================
  */
 void grid_copy (grid_t* dstGridPtr, grid_t* srcGridPtr){
-    assert(srcGridPtr->width  == dstGridPtr->width);
-    assert(srcGridPtr->height == dstGridPtr->height);
-    assert(srcGridPtr->depth  == dstGridPtr->depth);
+  assert(srcGridPtr->width == dstGridPtr->width);
+  assert(srcGridPtr->height == dstGridPtr->height);
+  assert(srcGridPtr->depth == dstGridPtr->depth);
 
-    long n = srcGridPtr->width * srcGridPtr->height * srcGridPtr->depth;
-    memcpy(dstGridPtr->points, srcGridPtr->points, (n * sizeof(long)));
+  long n = srcGridPtr->width * srcGridPtr->height * srcGridPtr->depth;
+  memcpy(dstGridPtr->points, srcGridPtr->points, (n * sizeof(long)));
 }
 
 
@@ -117,14 +117,14 @@ void grid_copy (grid_t* dstGridPtr, grid_t* srcGridPtr){
  * =============================================================================
  */
 bool_t grid_isPointValid (grid_t* gridPtr, long x, long y, long z){
-    if (x < 0 || x >= gridPtr->width  ||
-        y < 0 || y >= gridPtr->height ||
-        z < 0 || z >= gridPtr->depth)
-    {
-        return FALSE;
-    }
+  if (x < 0 || x >= gridPtr->width ||
+    y < 0 || y >= gridPtr->height ||
+    z < 0 || z >= gridPtr->depth)
+  {
+    return FALSE;
+  }
 
-    return TRUE;
+  return TRUE;
 }
 
 
@@ -133,7 +133,7 @@ bool_t grid_isPointValid (grid_t* gridPtr, long x, long y, long z){
  * =============================================================================
  */
 long* grid_getPointRef (grid_t* gridPtr, long x, long y, long z){
-    return &(gridPtr->points[(z * gridPtr->height + y) * gridPtr->width + x]);
+  return &(gridPtr->points[(z * gridPtr->height + y) * gridPtr->width + x]);
 }
 
 
@@ -142,14 +142,14 @@ long* grid_getPointRef (grid_t* gridPtr, long x, long y, long z){
  * =============================================================================
  */
 void grid_getPointIndices (grid_t* gridPtr, long* gridPointPtr, long* xPtr, long* yPtr, long* zPtr){
-    long height = gridPtr->height;
-    long width  = gridPtr->width;
-    long area = height * width;
-    long index3d = (gridPointPtr - gridPtr->points);
-    (*zPtr) = index3d / area;
-    long index2d = index3d % area;
-    (*yPtr) = index2d / width;
-    (*xPtr) = index2d % width;
+  long height = gridPtr->height;
+  long width = gridPtr->width;
+  long area = height * width;
+  long index3d = (gridPointPtr - gridPtr->points);
+  (*zPtr) = index3d / area;
+  long index2d = index3d % area;
+  (*yPtr) = index2d / width;
+  (*xPtr) = index2d % width;
 }
 
 
@@ -158,7 +158,7 @@ void grid_getPointIndices (grid_t* gridPtr, long* gridPointPtr, long* xPtr, long
  * =============================================================================
  */
 long grid_getPoint (grid_t* gridPtr, long x, long y, long z){
-    return *grid_getPointRef(gridPtr, x, y, z);
+  return *grid_getPointRef(gridPtr, x, y, z);
 }
 
 
@@ -167,8 +167,8 @@ long grid_getPoint (grid_t* gridPtr, long x, long y, long z){
  * =============================================================================
  */
 bool_t grid_isPointEmpty (grid_t* gridPtr, long x, long y, long z){
-    long value = grid_getPoint(gridPtr, x, y, z);
-    return ((value == GRID_POINT_EMPTY) ? TRUE : FALSE);
+  long value = grid_getPoint(gridPtr, x, y, z);
+  return ((value == GRID_POINT_EMPTY) ? TRUE : FALSE);
 }
 
 
@@ -177,8 +177,8 @@ bool_t grid_isPointEmpty (grid_t* gridPtr, long x, long y, long z){
  * =============================================================================
  */
 bool_t grid_isPointFull (grid_t* gridPtr, long x, long y, long z){
-    long value = grid_getPoint(gridPtr, x, y, z);
-    return ((value == GRID_POINT_FULL) ? TRUE : FALSE);
+  long value = grid_getPoint(gridPtr, x, y, z);
+  return ((value == GRID_POINT_FULL) ? TRUE : FALSE);
 }
 
 
@@ -187,7 +187,7 @@ bool_t grid_isPointFull (grid_t* gridPtr, long x, long y, long z){
  * =============================================================================
  */
 void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
-    (*grid_getPointRef(gridPtr, x, y, z)) = value;
+  (*grid_getPointRef(gridPtr, x, y, z)) = value;
 }
 
 
@@ -196,16 +196,16 @@ void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
  * =============================================================================
  */
 void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
-    long i;
-    long n = vector_getSize(pointVectorPtr);
+  long i;
+  long n = vector_getSize(pointVectorPtr);
 
-    for (i = 0; i < n; i++) {
-        coordinate_t* coordinatePtr = (coordinate_t*)vector_at(pointVectorPtr, i);
-        long x = coordinatePtr->x;
-        long y = coordinatePtr->y;
-        long z = coordinatePtr->z;
-        grid_setPoint(gridPtr, x, y, z, GRID_POINT_FULL);
-    }
+  for (i = 0; i < n; i++) {
+    coordinate_t* coordinatePtr = (coordinate_t*)vector_at(pointVectorPtr, i);
+    long x = coordinatePtr->x;
+    long y = coordinatePtr->y;
+    long z = coordinatePtr->z;
+    grid_setPoint(gridPtr, x, y, z, GRID_POINT_FULL);
+  }
 }
 
 
@@ -214,13 +214,13 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr){
  * =============================================================================
  */
 void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
-    long i;
-    long n = vector_getSize(pointVectorPtr);
+  long i;
+  long n = vector_getSize(pointVectorPtr);
 
-    for (i = 1; i < (n-1); i++) {
-        long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
-        *gridPointPtr = GRID_POINT_FULL; 
-    }
+  for (i = 1; i < (n-1); i++) {
+    long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
+    *gridPointPtr = GRID_POINT_FULL; 
+  }
 }
 
 
@@ -229,7 +229,7 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
  * =============================================================================
  */
 void grid_print (grid_t* gridPtr){
-    grid_print_to_file(gridPtr, stdout);
+  grid_print_to_file(gridPtr, stdout);
 }
 
 
@@ -238,23 +238,24 @@ void grid_print (grid_t* gridPtr){
  * =============================================================================
  */
 void grid_print_to_file (grid_t* gridPtr, FILE *stream){
-    assert(gridPtr);
-    assert(stream);
+  assert(gridPtr);
+  assert(stream);
 
-    long width  = gridPtr->width;
-    long height = gridPtr->height;
-    long depth  = gridPtr->depth;
-    for (long k = 0; k < depth; k++) {
-      	fprintf(stream, "[z = %li]\n", k);
-      	for (long i = 0; i < width; i++) {
-          	for (long j = 0; i < height; j++) {
-                fprintf(stream, "%4li", *grid_getPointRef(gridPtr, i, j, k));
-            }
-            fputs("", stream);
-        }
-        fputs("", stream);
+  long x, y, z;
+  long width = gridPtr->width;
+  long height = gridPtr->height;
+  long depth = gridPtr->depth;
+  for (z = 0; z < depth; z++) {
+   	fprintf(stream, "[z = %li]\n", z);
+   	for (x = 0; x < width; x++) {
+     	for (y = 0; y < height; y++) {
+        fprintf(stream, "%4li", *grid_getPointRef(gridPtr, x, y, z));
+      }
+      fputc('\n', stream);
     }
-    fflush(stream);
+    fputc('\n', stream);
+  }
+  fflush(stream);
 }
 
 

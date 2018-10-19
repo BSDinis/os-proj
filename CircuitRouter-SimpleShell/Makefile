@@ -2,17 +2,17 @@
 
 CC := gcc
 
-INCLUDES := -I.. 
+INCLUDES := -I..
 
 # vpath: tells where to search for files
 VPATH := .:..
 
 # fdiagnostics... make the output colorized
-CFLAGS := -Wall -Werror -Wno-error=stringop-overflow= -std=gnu99 -fdiagnostics-color=always $(INCLUDES)
+CFLAGS := -Wall -fdiagnostics-color=always $(INCLUDES)
 LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES) 
 LDLIBS := -lpthread -lm # link pthreads and math functs
-LDFLAGS += -L.. -L../lib # search the lib dir for libraries
-LDLIBS += -lutils # link the utils library
+LDFLAGS += -L.. -L../lib
+LDLIBS += -lutils
 
 # if you run 'make DEBUG=no' it will compile without the debugger flag
 ifneq ($(strip $(DEBUG)), no)
@@ -29,23 +29,27 @@ endif
 # TARGETS is the target executable
 SOURCES = $(wildcard *.c)
 OBJECTS = $(SOURCES:.c=.o)
-TARGETS = CircuitRouter-SeqSolver
+TARGETS = CircuitRouter-SimpleShell
+SOLVERDIR = ../CircuitRouter-SeqSolver
+SOLVER = $(SOLVERDIR)/CircuitRouter-SeqSolver
 
 # depend creates autodep, which parses the files and
 # creates rules based on their dependencies
 #
 # utils is a target that recompiles the library
-all: depend utils $(TARGETS)
+all: depend utils $(SOLVER) $(TARGETS) 
 
--include autodep
+$(SOLVER):
+	@make -C $(SOLVERDIR)
 
 # create static lib
 # -C means it goes into the lib dir and runs make
 utils:
 	@make -C ../lib
 
-# create executable
-CircuitRouter-SeqSolver: $(OBJECTS) 
+$(TARGETS): $(OBJECTS) 
+
+-include autodep
 
 # PHONY means it always runs 
 # (doesn't check if the dependencies didn't change)
@@ -56,6 +60,7 @@ CircuitRouter-SeqSolver: $(OBJECTS)
 clean:
 	@rm -f $(OBJECTS) $(TARGETS) autodep vgcore*
 	@make clean -C ../lib
+	@make clean -C $(SOLVERDIR)
 
 # get dependencies
 .PHONY: depend
