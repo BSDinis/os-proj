@@ -56,6 +56,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "lib/list.h"
 #include "maze.h"
@@ -117,7 +118,6 @@ static void setDefaultParams (){
 static void parseArgs (long argc, char* const argv[]){
   long i;
   long opt;
-  FILE *fp = NULL;
   opterr = 0;
 
   setDefaultParams();
@@ -140,14 +140,12 @@ static void parseArgs (long argc, char* const argv[]){
 
   for (i = optind; i < argc; i++) {
     if (!global_inputFile) {
-      fp = fopen(argv[i], "r");
-      if (fp == NULL) {
+      if (access(argv[i], R_OK) == -1) {
         fprintf(stderr, "Non-existing file: %s\n", argv[i]);
         opterr++;
         i = argc; // break
       }
       else {
-        fclose(fp);
         global_inputFile = argv[i];
       }
     }
@@ -175,10 +173,8 @@ FILE * open_out_stream(const char * const input_filename)
   strncpy(out_filename, input_filename, input_len + 1);
   strcat(out_filename, ".res");
 
-  fp = fopen(out_filename, "r");
-  if (fp != NULL) {
+  if (access(out_filename, R_OK) == -1) {
     // renaming .res to .res.old
-    fclose(fp);
     char old_filename[(input_len + 8 + 1)];
 
     strncpy(old_filename, out_filename, input_len + 4 + 1);
