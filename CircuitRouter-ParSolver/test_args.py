@@ -42,10 +42,10 @@ def genRand():
 
 def run():
   for i in range(10):
-    cmd = './CircuitRouter-SeqSolver'+genRand()
+    cmd = './CircuitRouter-ParSolver'+genRand()
     print('\n' + cmd + '\n\n\n\n')
   os.system(cmd)
 
-cmd = 'valgrind ./CircuitRouter-SeqSolver'+genRand()
+cmd = 'valgrind ./CircuitRouter-ParSolver'+genRand()
 print(cmd)
 os.system(cmd)
