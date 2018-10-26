@@ -69,7 +69,8 @@ command_t get_command()
   argc = readLineArguments(argv, max_argc + 1, buffer, MAXLINESIZE);
   if (argc < 0) {
     fprintf(stderr, "get_command: error reading from the line\n");
-    exit(2);
+    cmd.code = exit_code;
+    return cmd;;
   }
 
   cmd = parse_command(argv, argc);
