@@ -35,7 +35,7 @@ def genRand():
 
     elif typ == 1 and _file > 0:
       filen = filename[random.randint(0, len(filename) -1)]
-      res += ' ../inputs/'+filen
+      res += ' inputs/'+filen
       _file -= 1
 
   return res
