@@ -24,10 +24,10 @@ input_list = [
 ]
 
 for i in range(len(input_list)):
-    input_list[i] = "run ../CircuitRouter-SeqSolver/inputs/"+input_list[i];
+    input_list[i] = "run ../inputs/"+input_list[i];
 
 for i in range(len(heavy)):
-    heavy[i] = "run ../CircuitRouter-SeqSolver/inputs/"+heavy[i];
+    heavy[i] = "run ../inputs/"+heavy[i];
 
 for a in sys.argv:
     if a == 'heavy':
@@ -35,7 +35,7 @@ for a in sys.argv:
 
 bad_inputs = [
     'dddas asdf',
-    'run ../CircuitRouter-SeqSolver/inputs/random-x64-y64-z3-n48.txt asd',
+    'run ../inputs/random-x64-y64-z3-n48.txt asd',
     ' exit'
 ]
 

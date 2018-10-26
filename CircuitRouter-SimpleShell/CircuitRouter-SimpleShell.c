@@ -307,12 +307,10 @@ static void execute_command(const command_t cmd)
   */
 int main(int argc, char** argv){
   // search for solver
-  FILE *fp = fopen(SOLVER, "r");
-  if (fp == NULL) {
+  if (access(SOLVER, R_OK ^ X_OK) == -1) {
     fprintf(stderr, "Could not find solver. Exiting\n");
     exit(1);
   }
-  fclose(fp);
   
   /* Initialization */
   parseArgs(argc, (char** const)argv);
