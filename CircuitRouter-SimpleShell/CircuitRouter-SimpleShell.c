@@ -220,10 +220,8 @@ static void rem_active()
 static int print_status(void *arg)
 {
   child_ctx_t *ctx = (child_ctx_t *) arg;
-  printf("CHILD EXITED (PID=%d; return %sOK)\n",
-      ctx->pid,
-      (ctx->status_code == 0) ? "" : "N");
-
+  int success = WIFEXITED(ctx->status_code) && WEXISTSTATUS(ctx->status_code) == 0;
+  printf("CHILD EXITED (PID=%d; return %sOK)\n", ctx->pid, (success) ? "" : "N");
   free(ctx);
   return 0;
 }
