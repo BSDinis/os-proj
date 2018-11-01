@@ -5,7 +5,7 @@
 # for each input file, return the number of lines in the file 
 # and the number of interconnections
 
-input_folder='../CircuitRouter-SeqSolver/inputs'
+input_folder='../inputs'
 
 for input in ${input_folder}/*.txt.res*
 do
