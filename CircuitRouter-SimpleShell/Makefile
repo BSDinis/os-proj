@@ -33,18 +33,20 @@ TARGETS = CircuitRouter-SimpleShell
 SOLVERDIR = ../CircuitRouter-SeqSolver
 SOLVER = $(SOLVERDIR)/CircuitRouter-SeqSolver
 
+LIBUTILS = ../lib/libutils.a
+
 # depend creates autodep, which parses the files and
 # creates rules based on their dependencies
 #
 # utils is a target that recompiles the library
-all: depend utils $(SOLVER) $(TARGETS) 
+all: depend $(LIBUTILS) $(SOLVER) $(TARGETS) 
 
 $(SOLVER):
 	@make -C $(SOLVERDIR)
 
 # create static lib
 # -C means it goes into the lib dir and runs make
-utils:
+$(LIBUTILS):
 	@make -C ../lib
 
 $(TARGETS): $(OBJECTS) 
