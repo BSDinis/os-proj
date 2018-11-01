@@ -14,6 +14,8 @@ LDLIBS := -lpthread -lm # link pthreads and math functs
 LDFLAGS += -L.. -L../lib # search the lib dir for libraries
 LDLIBS += -lutils # link the utils library
 
+LIBUTILS = ../lib/libutils.a
+
 # if you run 'make DEBUG=no' it will compile without the debugger flag
 ifneq ($(strip $(DEBUG)), no)
  CFLAGS += -g
@@ -35,13 +37,13 @@ TARGETS = CircuitRouter-SeqSolver
 # creates rules based on their dependencies
 #
 # utils is a target that recompiles the library
-all: depend utils $(TARGETS)
+all: depend $(LIBUTILS) $(TARGETS)
 
 -include autodep
 
 # create static lib
 # -C means it goes into the lib dir and runs make
-utils:
+$(LIBUTILS):
 	@make -C ../lib
 
 # create executable
