@@ -26,8 +26,7 @@
 #include <unistd.h>
 
 #include "command.h"
-#include "lib/simple_list.h"
-#include "lib/hashtable.h"
+#include "lib/vector.h"
 
 #define SOLVER "../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver"
 
@@ -44,50 +43,11 @@ typedef struct {
   int status_code;
 } child_ctx_t;
 
-
 int64_t global_max_children;
 
-simple_list_t global_zombies; // finished processes
-hashtable_t global_active; // active processes (limited by global_max_children)
+vector_t *global_zombies; // finished processes
+int32_t global_n_active; // active processes (limited by global_max_children)
 
-/* =============================================================================
- * compare pid pointers
- * =============================================================================
- */
-static int compare_pid_t(const void *a, const void *b)
-{
-  if (a == NULL || b == NULL) return 1;
-
-  const pid_t * first = (const pid_t *) a;
-  const pid_t * second = (const pid_t *) b;
-  return (*first == *second) ? 1 : 0;
-}
-
-
-/* =============================================================================
- * hash of a pid pointer
- * =============================================================================
- */
-static ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
-{
-  if (cap <= 0 || ptr == NULL) return 1;
-
-  const pid_t *pid = (const pid_t *) ptr;
-  return *pid % cap;
-}
-
-
-/* =============================================================================
- * 2nd hash of a pid pointer
- * =============================================================================
- */
-static ssize_t hash_pid_2(const ssize_t cap, const void * ptr)
-{
-  if (cap <= 0 || ptr == NULL) return 1;
-
-  const pid_t *pid = (const pid_t *) ptr;
-  return *pid % 7 + 1;
-}
 
 
 /* =============================================================================
@@ -106,6 +66,7 @@ static void display_usage(const char * program_name){
 static void setDefaults ()
 {
   global_max_children = -1;
+  global_n_active = 0;
 }
 
 /* =============================================================================
@@ -140,8 +101,8 @@ static void parseArgs (const long argc, char* const argv[]){
  */
 static void add_zombie(child_ctx_t * ctx)
 {
-  if (simple_list_pushback(global_zombies, (void *) ctx) == -1)  {
-    fprintf(stderr, "add_zombie: simple_list_pushback returned error\n. Aborting.");
+  if (vector_pushBack(global_zombies, (void *) ctx) == FALSE)  {
+    fprintf(stderr, "add_zombie: vector_pushBack returned error\n. Aborting.");
     abort();
   }
 }
@@ -150,19 +111,9 @@ static void add_zombie(child_ctx_t * ctx)
  * add_active
  * =================================================================
  */
-static void add_active(const pid_t pid)
+static void add_active()
 {
-  pid_t *ptr = malloc(sizeof(pid_t));
-  if (ptr == NULL) {
-    perror("add_active: malloc");
-    exit(-2);
-  }
-  
-  *ptr = pid;
-  if (hashtable_add(global_active, (void *) ptr) == -1) {
-    fprintf(stderr, "add_active: hashtable_add returned error.\nAborting\n");
-    abort();
-  }
+  global_n_active++;
 }
 
 /* =================================================================
@@ -205,25 +156,8 @@ static void rem_active()
   finished->status_code = status;
   finished->pid = pid;
 
-  void * ptr = hashtable_rem(global_active, (void *) &(finished->pid));
-  if (ptr != NULL)
-    free(ptr);
-
   add_zombie(finished);
-}
-
-
-/* =================================================================
- * print_status: transverse function
- * =================================================================
- */
-static int print_status(void *arg)
-{
-  child_ctx_t *ctx = (child_ctx_t *) arg;
-  int success = WIFEXITED(ctx->status_code) && WEXITSTATUS(ctx->status_code) == 0;
-  printf("CHILD EXITED (PID=%d; return %sOK)\n", ctx->pid, (success) ? "" : "N");
-  free(ctx);
-  return 0;
+  global_n_active--;
 }
 
 
@@ -246,7 +180,7 @@ static void print_command_help()
 static void run_solver(const char *inputfile)
 {
   if (global_max_children != -1 
-      && hashtable_size(global_active) == global_max_children) {
+      && global_n_active == global_max_children) {
     rem_active();
   }
   
@@ -263,7 +197,7 @@ static void run_solver(const char *inputfile)
     perror("run_solver: fork");
   }
   
-  add_active(cid);
+  add_active();
 }
 
 /* =============================================================================
@@ -272,11 +206,21 @@ static void run_solver(const char *inputfile)
   */
 static void exit_shell()
 {
-  while (hashtable_size(global_active) != 0) {
+  while (global_n_active != 0) {
     rem_active();
   }
   
-  simple_list_transverse(global_zombies, print_status);
+  ssize_t size = vector_getSize(global_zombies);
+  for (ssize_t i = 0; i < size; i++) {
+    void * data = vector_at(global_zombies, i);
+    if (data == NULL) continue;
+
+    child_ctx_t * ctx = (child_ctx_t * ) data;
+    int success = WIFEXITED(ctx->status_code) && WEXITSTATUS(ctx->status_code) == 0;
+    fprintf(stdout, "CHILD EXITED (PID=%d; return %sOK)\n", ctx->pid, (success) ? "" : "N");
+    free(ctx);
+  }
+  
   printf("END.\n");
 }
 
@@ -315,37 +259,9 @@ int main(int argc, char** argv){
   /* Initialization */
   parseArgs(argc, (char** const)argv);
 
-  global_zombies = simple_list_();  
+  global_zombies = vector_alloc(global_max_children);
   if (global_zombies == NULL) {
     fprintf(stderr, "failed to initialize zombie list. aborting\n");
-    return -1;
-  }
-  
-  ssize_t init_capacity = 0;
-  if (global_max_children != -1)
-    init_capacity = global_max_children * 2; 
-    /* here we have a performance - memory tradeoff,
-     * where time performance is favoured
-     *
-     * if we define the initial capacity as max_children,
-     * once max_children / 2 elements are added, the hashtable is 
-     * reallocated and all the elements are inserted again 
-     * (which is quite expensive)
-     *
-     * since we know we will never insert more than global_max_children,
-     * by doubling the initial capacity, we avoid that operation
-     * entirely */
-  else
-    init_capacity = 1 << 8;
-
-  global_active = hashtable_(init_capacity,
-      hash_pid_1,
-      hash_pid_2,
-      compare_pid_t);
-
-  if (global_active == NULL) {
-    fprintf(stderr, "failed to initialize zombie list. aborting\n");
-    free_simple_list(global_zombies);
     return -1;
   }
   
@@ -355,8 +271,7 @@ int main(int argc, char** argv){
     execute_command(cmd);
   } while (cmd.code != exit_code);
 
-  free_hashtable(global_active);
-  free_simple_list(global_zombies);
+  vector_free(global_zombies);
   exit(0);
 }
 
