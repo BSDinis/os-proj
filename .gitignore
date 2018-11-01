@@ -1,13 +1,15 @@
 *.o
 autodep
 CircuitRouter-SeqSolver/CircuitRouter-SeqSolver
+CircuitRouter-ParSolver/CircuitRouter-ParSolver
 CircuitRouter-SimpleShell/CircuitRouter-SimpleShell
 test_simple_list
 test_hashtable
 *.a
 .*
-*.md
 *.txt
+!README.txt
+*.md
 *.res
 *.old
 vgcore*

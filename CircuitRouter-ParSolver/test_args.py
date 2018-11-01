@@ -35,17 +35,17 @@ def genRand():
 
     elif typ == 1 and _file > 0:
       filen = filename[random.randint(0, len(filename) -1)]
-      res += ' ../inputs/'+filen
+      res += ' inputs/'+filen
       _file -= 1
 
   return res
 
 def run():
   for i in range(10):
-    cmd = './CircuitRouter-SeqSolver'+genRand()
+    cmd = './CircuitRouter-ParSolver'+genRand()
     print('\n' + cmd + '\n\n\n\n')
   os.system(cmd)
 
-cmd = 'valgrind ./CircuitRouter-SeqSolver'+genRand()
+cmd = 'valgrind ./CircuitRouter-ParSolver'+genRand()
 print(cmd)
 os.system(cmd)
