@@ -57,6 +57,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "lib/list.h"
 #include "maze.h"
@@ -69,6 +70,7 @@ enum param_types {
   PARAM_XCOST  = (unsigned char)'x',
   PARAM_YCOST  = (unsigned char)'y',
   PARAM_ZCOST  = (unsigned char)'z',
+  PARAM_NTHREADS  = (unsigned char)'t',
 };
 
 enum param_defaults {
@@ -88,13 +90,14 @@ long global_params[256]; /* 256 = ascii limit */
  * =============================================================================
  */
 static void displayUsage (const char* appName){
-  fprintf(stderr, "Usage: %s [options] <filename>\n", appName);
-  fputs("\nOptions:                    (defaults)\n", stderr);
-  fprintf(stderr, "  b       <INT>  [b]end cost     (%i)\n", PARAM_DEFAULT_BENDCOST);
-  fprintf(stderr, "  x       <UINT>  [x] movement cost  (%i)\n", PARAM_DEFAULT_XCOST);
-  fprintf(stderr, "  y       <UINT>  [y] movement cost  (%i)\n", PARAM_DEFAULT_YCOST);
-  fprintf(stderr, "  z       <UINT>  [z] movement cost  (%i)\n", PARAM_DEFAULT_ZCOST);
-  fprintf(stderr, "  h           [h]elp message    (false)\n");
+  fprintf(stderr, "Usage: %s [options] <filename>\n\n", appName);
+  fputs(          "Options:\t\t\t\t\t(defaults)\n", stderr);
+  fprintf(stderr, "  b\t<INT>\t\t[b]end cost\t\t(%i)\n", PARAM_DEFAULT_BENDCOST);
+  fprintf(stderr, "  x\t<UINT>\t\t[x] movement cost\t(%i)\n", PARAM_DEFAULT_XCOST);
+  fprintf(stderr, "  y\t<UINT>\t\t[y] movement cost\t(%i)\n", PARAM_DEFAULT_YCOST);
+  fprintf(stderr, "  z\t<UINT>\t\t[z] movement cost\t(%i)\n", PARAM_DEFAULT_ZCOST);
+  fprintf(stderr, "  h\t\t\t[h]elp message\t\t(false)\n");
+  fprintf(stderr, "  t\t<POSINT>\tnumber of [t]hreads\t(mandatory)\n");
   exit(1);
 }
 
@@ -108,6 +111,7 @@ static void setDefaultParams (){
   global_params[PARAM_XCOST]  = PARAM_DEFAULT_XCOST;
   global_params[PARAM_YCOST]  = PARAM_DEFAULT_YCOST;
   global_params[PARAM_ZCOST]  = PARAM_DEFAULT_ZCOST;
+  global_params[PARAM_NTHREADS] = 0;
 }
 
 
@@ -122,12 +126,13 @@ static void parseArgs (long argc, char* const argv[]){
 
   setDefaultParams();
 
-  while ((opt = getopt(argc, argv, "hb:x:y:z:")) != -1) {
+  while ((opt = getopt(argc, argv, "hb:x:y:z:t:")) != -1) {
     switch (opt) {
       case 'b':
       case 'x':
       case 'y':
       case 'z':
+      case 't':
         global_params[(unsigned char)opt] = atol(optarg);
         break;
       case '?':
@@ -138,7 +143,14 @@ static void parseArgs (long argc, char* const argv[]){
     }
   }
 
-  for (i = optind; i < argc; i++) {
+
+  if (global_params[PARAM_NTHREADS] <= 0){
+    opterr++;
+    fprintf(stderr, "Number of threads must be positive ( %ld <= 0 )\n",  global_params[PARAM_NTHREADS]);
+  }
+  
+  
+  for (i = optind; i < argc && !opterr; i++) {
     if (!global_inputFile) {
       if (access(argv[i], R_OK) == -1) {
         fprintf(stderr, "Non-existing file: %s\n", argv[i]);
@@ -154,6 +166,7 @@ static void parseArgs (long argc, char* const argv[]){
      opterr++;
     }
   }
+
 
   if (opterr || !global_inputFile) {
     displayUsage(argv[0]);
@@ -173,7 +186,7 @@ FILE * open_out_stream(const char * const input_filename)
   strncpy(out_filename, input_filename, input_len + 1);
   strcat(out_filename, ".res");
 
-  if (access(out_filename, R_OK) == -1) {
+  if (access(out_filename, R_OK) == 0) {
     // renaming .res to .res.old
     char old_filename[(input_len + 8 + 1)];
 
