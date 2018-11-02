@@ -10,7 +10,7 @@ VPATH := .:..
 # fdiagnostics... make the output colorized
 CFLAGS := -Wall -Werror -Wno-error=stringop-overflow= -std=gnu99 -fdiagnostics-color=always $(INCLUDES)
 LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES) 
-LDLIBS := -lpthread -lm # link pthreads and math functs
+LDLIBS := -lm # link math functs
 LDFLAGS += -L.. -L../lib # search the lib dir for libraries
 LDLIBS += -lutils # link the utils library
 

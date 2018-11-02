@@ -10,7 +10,7 @@ VPATH := .:..
 # fdiagnostics... make the output colorized
 CFLAGS := -Wall -fdiagnostics-color=always $(INCLUDES)
 LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES) 
-LDLIBS := -lpthread -lm # link pthreads and math functs
+LDLIBS := -lm # link math functs
 LDFLAGS += -L.. -L../lib
 LDLIBS += -lutils
 
