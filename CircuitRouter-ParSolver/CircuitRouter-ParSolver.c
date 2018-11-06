@@ -52,12 +52,13 @@
 
 
 #include <assert.h>
+#include <errno.h>
 #include <getopt.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <pthread.h>
 
 #include "lib/list.h"
 #include "maze.h"
@@ -216,6 +217,15 @@ int main(int argc, char** argv){
    * Initialization
    */
   parseArgs(argc, (char** const)argv);
+
+  long nthreads = global_params[PARAM_NTHREADS];
+  pthread_t * working_threads = malloc(nthreads * sizeof(pthread_t));
+  if (working_threads == NULL) {
+    fprintf(stderr, "memory allocation error, cannot create that many threads\n");
+    perror("malloc");
+    abort();
+  }
+  
   maze_t* mazePtr = maze_alloc();
   assert(mazePtr);
 
@@ -235,7 +245,28 @@ int main(int argc, char** argv){
   TIMER_T startTime;
   TIMER_READ(startTime);
 
-  router_solve((void *)&routerArg);
+
+  for (long i = 0; i < nthreads; i++) {
+    errno = 0;
+    int ret = pthread_create(&working_threads[i], NULL, router_solve, (void *)&routerArg);
+    if (ret != 0) {
+      //error
+      fprintf(stderr, "pthread_create (%ld threads created so far): ", i);
+      perror("router_solver");
+      abort();
+    }
+  }
+  
+  for (long i = 0; i < nthreads; i++) {
+    errno = 0;
+    int ret = pthread_join(working_threads[i], NULL);
+    if (ret != 0) {
+      //error
+      fprintf(stderr, "pthread_join (%ldth thread): ", i);
+      perror("router_solver");
+      abort();
+    }
+  }
 
   TIMER_T stopTime;
   TIMER_READ(stopTime);

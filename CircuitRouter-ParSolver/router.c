@@ -87,6 +87,8 @@ point_t MOVE_NEGX = {-1, 0, 0, 0, MOMENTUM_NEGX};
 point_t MOVE_NEGY = { 0, -1, 0, 0, MOMENTUM_NEGY};
 point_t MOVE_NEGZ = { 0, 0, -1, 0, MOMENTUM_NEGZ};
 
+pthread_mutex_t work_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t grid_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* =============================================================================
  * router_alloc
@@ -170,7 +172,7 @@ static bool_t doExpansion (router_t* routerPtr, grid_t* myGridPtr, queue_t* queu
 
     long x;
     long y;
-    long z;
+   long z;
     grid_getPointIndices(myGridPtr, gridPointPtr, &x, &y, &z);
     long value = (*gridPointPtr);
 
@@ -294,8 +296,7 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
  * router_solve
  * =============================================================================
  */
-void router_solve (void* argPtr){
-
+void *router_solve (void* argPtr){
   router_solve_arg_t* routerArgPtr = (router_solve_arg_t*)argPtr;
   router_t* routerPtr = routerArgPtr->routerPtr;
   maze_t* mazePtr = routerArgPtr->mazePtr;
@@ -319,7 +320,9 @@ void router_solve (void* argPtr){
     if (queue_isEmpty(workQueuePtr)) {
       coordinatePairPtr = NULL;
     } else {
+      pthread_mutex_lock(&work_queue_mutex);
       coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
+      pthread_mutex_unlock(&work_queue_mutex);
     }
     if (coordinatePairPtr == NULL) {
       break;
@@ -333,13 +336,14 @@ void router_solve (void* argPtr){
     bool_t success = FALSE;
     vector_t* pointVectorPtr = NULL;
 
+    pthread_mutex_lock(&grid_mutex);
     grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
+    pthread_mutex_unlock(&grid_mutex);
     if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
              srcPtr, dstPtr)) {
       pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
       if (pointVectorPtr) {
         grid_addPath_Ptr(gridPtr, pointVectorPtr);
-
         success = TRUE;
       }
     }
@@ -359,6 +363,7 @@ void router_solve (void* argPtr){
 
   grid_free(myGridPtr);
   queue_free(myExpansionQueuePtr);
+  return NULL;
 }
 
 
