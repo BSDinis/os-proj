@@ -9,7 +9,7 @@ input_folder='../inputs'
 
 for input in ${input_folder}/*.txt
 do
-  n_lines=$(cat ${input} | wc -l)
+  n_lines=$(wc -l ${input})
   n_circuits=$(grep '^p' ${input} | wc -l)
   echo == file ${input} ==
   echo ${n_lines} lines 
