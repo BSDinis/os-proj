@@ -52,6 +52,7 @@
 
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include "coordinate.h"
@@ -78,11 +79,43 @@ grid_t* grid_alloc (long width, long height, long depth){
     long n = width * height * depth;
     long* points_unaligned = (long*)malloc(n * sizeof(long) + CACHE_LINE_SIZE);
     assert(points_unaligned);
+    gridPtr->locks = malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(gridPtr->locks, NULL);
+    /*
+    gridPtr->locks_unaligned = (pthread_mutex_t *)malloc(n * sizeof(pthread_mutex_t) + CACHE_LINE_SIZE);
+    assert(gridPtr->locks_unaligned);*/
     gridPtr->points_unaligned = points_unaligned;
+
+    /**
+     * Pointer black magic explained:
+     * we want the arrays to be cache aligned so we add enough elements to have another line
+     * by casting the pointer to an unsigned long, we can transform it
+     * we then move the pointer to the next multiple of CACHE_LINE_SIZE
+     * (since it is a multiple of 2, by &ing w/ ~(CACHE_LINE_SIZE -1) 
+     * we get it to the previous multiple and then add CACHE_LINE SIZE to
+     * get it to the next multiple)
+     *
+     * Enjoy nice block aligned arrays and low miss rates
+     */
     gridPtr->points = (long*)((char*)(((unsigned long)points_unaligned
                      & ~(CACHE_LINE_SIZE-1)))
                  + CACHE_LINE_SIZE);
+    /*
+    gridPtr->locks = (pthread_mutex_t *)((char*)(((unsigned long)gridPtr->locks_unaligned
+                     & ~(CACHE_LINE_SIZE-1)))
+                 + CACHE_LINE_SIZE);
+                 */
     memset(gridPtr->points, GRID_POINT_EMPTY, (n * sizeof(long)));
+
+    /*
+    for (long i = 0; i < n; i++) {
+      if (errno = pthread_mutex_init(&gridPtr->locks[i], NULL)) {
+        perror("grid_alloc: pthread_mutex_init");
+        grid_free(gridPtr);
+        return NULL;
+      }
+    }
+    */
   }
 
   return gridPtr;
@@ -94,6 +127,8 @@ grid_t* grid_alloc (long width, long height, long depth){
  */
 void grid_free (grid_t* gridPtr){
   free(gridPtr->points_unaligned);
+  //free(gridPtr->locks_unaligned);
+  free(gridPtr->locks);
   free(gridPtr);
 }
 
@@ -190,6 +225,35 @@ void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
   (*grid_getPointRef(gridPtr, x, y, z)) = value;
 }
 
+/* =============================================================================
+ * grid_lockPoint
+ * =============================================================================
+ */
+bool_t grid_lockPoint (grid_t* gridPtr, long x, long y, long z){
+  fprintf(stderr, "locking point (%ld, %ld, %ld) ------------ ", x, y, z);
+  errno = pthread_mutex_lock(&gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
+  if (errno) {
+    perror("grid_lockPoint: pthread_mutex_lock");
+    return FALSE;
+  }
+  fprintf(stderr, "got lock\n");
+  return TRUE;
+}
+
+/* =============================================================================
+ * grid_unlockPoint
+ * =============================================================================
+ */
+bool_t grid_unlockPoint (grid_t* gridPtr, long x, long y, long z){
+  fprintf(stderr, "unlocking point (%ld, %ld, %ld) ------------ ", x, y, z);
+  errno = pthread_mutex_unlock(&gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
+  if (errno) {
+    perror("grid_unlockPoint: pthread_mutex_unlock");
+    return FALSE;
+  }
+  fprintf(stderr, "released lock\n");
+  return TRUE;
+}
 
 /* =============================================================================
  * grid_addPath
@@ -223,6 +287,24 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
   }
 }
 
+
+/* =============================================================================
+ * grid_checkPath_Ptr
+ * =============================================================================
+ */
+bool_t grid_checkPath_Ptr(grid_t* gridPtr, vector_t* pointVectorPtr){
+  long i;
+  long n = vector_getSize(pointVectorPtr);
+
+  for (i = 1; i < (n-1); i++) {
+    long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
+    if (*gridPointPtr == GRID_POINT_FULL) {
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
 
 /* =============================================================================
  * grid_print

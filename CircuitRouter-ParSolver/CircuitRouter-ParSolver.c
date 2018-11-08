@@ -270,6 +270,7 @@ int main(int argc, char** argv){
 
   TIMER_T stopTime;
   TIMER_READ(stopTime);
+  free(working_threads);
 
   long numPathRouted = 0;
   list_iter_t it;
