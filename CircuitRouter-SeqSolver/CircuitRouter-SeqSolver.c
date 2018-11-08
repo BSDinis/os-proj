@@ -173,7 +173,7 @@ FILE * open_out_stream(const char * const input_filename)
   strncpy(out_filename, input_filename, input_len + 1);
   strcat(out_filename, ".res");
 
-  if (access(out_filename, R_OK) == -1) {
+  if (access(out_filename, R_OK) == 0) {
     // renaming .res to .res.old
     char old_filename[(input_len + 8 + 1)];
 

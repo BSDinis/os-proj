@@ -31,17 +31,19 @@ SOURCES = $(wildcard *.c)
 OBJECTS = $(SOURCES:.c=.o)
 TARGETS = CircuitRouter-ParSolver
 
+LIBUTILS = ../lib/libutils.a
+
 # depend creates autodep, which parses the files and
 # creates rules based on their dependencies
 #
 # utils is a target that recompiles the library
-all: depend utils $(TARGETS)
+all: depend $(LIBUTILS) $(TARGETS)
 
 -include autodep
 
 # create static lib
 # -C means it goes into the lib dir and runs make
-utils:
+$(LIBUTILS):
 	@make -C ../lib
 
 # create executable
