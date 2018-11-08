@@ -352,14 +352,12 @@ void *router_solve (void* argPtr){
     if (success) {
       bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
       assert(status);
+      pair_free(coordinatePairPtr);
     }
     else {
-      /*
       fprintf(stderr, "FAILED");
       queue_push(workQueuePtr, (void*)coordinatePairPtr);
-      */
     }
-    pair_free(coordinatePairPtr);
     
   }
 
