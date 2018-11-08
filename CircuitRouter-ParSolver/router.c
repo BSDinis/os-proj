@@ -355,7 +355,7 @@ void *router_solve (void* argPtr){
       pair_free(coordinatePairPtr);
     }
     else {
-      fprintf(stderr, "FAILED");
+      // failed, retry
       queue_push(workQueuePtr, (void*)coordinatePairPtr);
     }
     
