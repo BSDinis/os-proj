@@ -12,3 +12,6 @@ do
   echo == removing file ${input} ==
   rm ${input}
 done
+
+rm vgcore*
+
