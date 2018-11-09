@@ -13,5 +13,5 @@ do
   rm ${input}
 done
 
-rm vgcore*
+rm -f vgcore*
 
