@@ -323,15 +323,6 @@ void *router_solve (void* argPtr){
 
     coordinate_t* srcPtr = coordinatePairPtr->firstPtr;
     coordinate_t* dstPtr = coordinatePairPtr->secondPtr;
-    /***** DEBUG *****
-    fprintf(stderr, "working on pair [(%ld, %ld, %ld), (%ld, %ld, %ld)]\n", 
-        srcPtr->x,
-        srcPtr->y,
-        srcPtr->z,
-        dstPtr->x,
-        dstPtr->y,
-        dstPtr->z);
-    ***** DEBUG *****/
 
     bool_t success = FALSE;
     vector_t* pointVectorPtr = NULL;
