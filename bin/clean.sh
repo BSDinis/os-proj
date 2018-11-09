@@ -7,7 +7,7 @@
 
 input_folder='../inputs'
 
-for input in ${input_folder}/*.txt.res*
+for input in ${input_folder}/*.txt.*
 do
   echo == removing file ${input} ==
   rm ${input}
