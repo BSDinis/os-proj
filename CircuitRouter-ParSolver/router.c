@@ -348,6 +348,7 @@ void *router_solve (void* argPtr){
     else {
       // failed, retry
       queue_push(workQueuePtr, (void*)coordinatePairPtr);
+      if (pointVectorPtr) vector_free(pointVectorPtr);
     }
     
   }
