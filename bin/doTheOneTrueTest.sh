@@ -1,8 +1,14 @@
 #!/usr/bin/zsh
 #!/usr/bin/bash
 
-# got tired of thinking which file to run the project on
+if [ $# -ne 1 ]
+then
+  echo "dude... how many threads?"
+  exit 1
+fi
 
+
+# got tired of thinking which file to run the project on
 file=../inputs/random-x48-y48-z3-n64.txt
 
 echo "============================================================"
