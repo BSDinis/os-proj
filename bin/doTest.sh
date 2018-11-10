@@ -3,6 +3,7 @@
 
 #sanity checks
 seq="../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver"
+par="../CircuitRouter-ParSolver/CircuitRouter-ParSolver"
 
 if [ $# -ne 2 ]
 then
@@ -19,21 +20,22 @@ then
 fi
 
 add_new_entry () {
-  if [$# -ne 3]
-  then
-    echo "usage: $0 <file> <row_name> <time>"
-    exit 1
-  fi
+  #if [ $# -ne 3 ]
+  #then
+    #echo "usage: $0 <file> <row_name> <time>"
+    #exit 1
+  #fi
+  echo "$1"
   speedup=$(echo "scale=6; ${sequential}/$3" | bc)
-  echo $2",\t\t"$3",\t"${speedup} >> $1
+  echo $2",\t\t\t\t"$3",\t"${speedup} >> $1
 }
 
 
 #output files
 speedup_file=$2.speedups.csv 
 new_speedup_file=../results/$(basename ${speedup_file})
-echo "" > ${speedup_file}
-echo "" > ${new_speedup_file}
+echo -n "" > ${speedup_file}
+echo -n "" > ${new_speedup_file}
 
 
 echo "==          DO TEST         =="
@@ -43,11 +45,11 @@ echo "== inpufile: "$2" =="
 echo "== speedup_file: "${new_speedup_file}" =="
 
 
-echo "#n_threads,\ttime,\t\tspeedup" >> ${speedup_file}
+echo "#n_threads,\t\ttime,\t\tspeedup" >> ${speedup_file}
 echo "== Running sequential =="
- $2
+../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver $2
 sequential=$(grep "Elapsed time" $2.res | cut -d " " -f 5)
-add_new_entry $2.res 1S $sequential
+add_new_entry $speedup_file 1S $sequential
 echo "== Time: "$sequential
 echo "== Done == "
 
@@ -56,7 +58,7 @@ do
   echo "== Running parallel w/ "$i" threads =="
   ../CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $2 ;
   timed=$(grep "Elapsed time" $2.res | cut -d " " -f 5)
-  add_new_entry $2.res $i $timed
+  add_new_entry $speedup_file $i $timed
   echo "== Time: "$timed
   echo "== Done == "
 done
