@@ -21,14 +21,15 @@ static void handle_error(wrapper_action action, int error_code, const char * con
   switch (action) {
     case abort_exec:
       errno = error_code;
-      perror(error_string);
+      if (error_string)
+        perror(error_string);
       fprintf(stderr, "pthread_wrappers: aborting execution\n");
       exit(-3);
       break;
     case print_error:
       errno = error_code;
-      fprintf(stderr, "pthread_wrappers: ");
-      perror(error_string);
+      if (error_string)
+        perror(error_string);
     case ignore:
       break; // BAD
     default:
