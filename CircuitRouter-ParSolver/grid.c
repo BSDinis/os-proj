@@ -65,6 +65,8 @@
 
 
 const unsigned long CACHE_LINE_SIZE = 32UL;
+#define MAX_TRIES 2
+#define MAX_TIMEOUT 1<<7
 
 
 /* =============================================================================
@@ -82,12 +84,10 @@ grid_t* grid_alloc (long width, long height, long depth){
     long n = width * height * depth;
     long* points_unaligned = (long*)malloc(n * sizeof(long) + CACHE_LINE_SIZE);
     assert(points_unaligned);
-    gridPtr->locks = malloc(sizeof(pthread_mutex_t));
-    Pthread_mutex_init(abort_exec, "grid_alloc: failed to init mutex", gridPtr->locks, NULL);
-    /*
-    gridPtr->locks_unaligned = (pthread_mutex_t *)malloc(n * sizeof(pthread_mutex_t) + CACHE_LINE_SIZE);
-    assert(gridPtr->locks_unaligned);*/
     gridPtr->points_unaligned = points_unaligned;
+
+    gridPtr->locks_unaligned = (pthread_mutex_t *)malloc(n * sizeof(pthread_mutex_t) + CACHE_LINE_SIZE);
+    assert(gridPtr->locks_unaligned);
 
     /**
      * Pointer black magic explained:
@@ -103,21 +103,22 @@ grid_t* grid_alloc (long width, long height, long depth){
     gridPtr->points = (long*)((char*)(((unsigned long)points_unaligned
                      & ~(CACHE_LINE_SIZE-1)))
                  + CACHE_LINE_SIZE);
-    /*
+
     gridPtr->locks = (pthread_mutex_t *)((char*)(((unsigned long)gridPtr->locks_unaligned
                      & ~(CACHE_LINE_SIZE-1)))
                  + CACHE_LINE_SIZE);
-                 */
+
     memset(gridPtr->points, GRID_POINT_EMPTY, (n * sizeof(long)));
 
-    /*
     for (long i = 0; i < n; i++) {
       if (Pthread_mutex_init(print_error, "grid_alloc: failed to init mutex", &gridPtr->locks[i], NULL)) {
+        for (long j = 0; j < n; j++) 
+          Pthread_mutex_destroy(print_error, "grid_alloc: failed to destroy mutex", &gridPtr->locks[j]);
+
         grid_free(gridPtr);
         return NULL;
       }
     }
-    */
   }
 
   return gridPtr;
@@ -129,8 +130,7 @@ grid_t* grid_alloc (long width, long height, long depth){
  */
 void grid_free (grid_t* gridPtr){
   free(gridPtr->points_unaligned);
-  //free(gridPtr->locks_unaligned);
-  free(gridPtr->locks);
+  free(gridPtr->locks_unaligned);
   free(gridPtr);
 }
 
@@ -231,54 +231,63 @@ void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
  * grid_lockPoint
  * =============================================================================
  */
-bool_t grid_lockPoint (grid_t* gridPtr, long x, long y, long z){
-  fprintf(stderr, "locking point (%ld, %ld, %ld) ------------ ", x, y, z);
-  if (Pthread_mutex_lock(print_error, "grid_lockPoint: failed to lock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x])) 
-    return FALSE;
+void grid_lockPoint (grid_t* gridPtr, long x, long y, long z){
+  Pthread_mutex_lock(print_error, "grid_lockPoint: failed to lock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
+}
 
-  fprintf(stderr, "got lock\n");
-  return TRUE;
+/* =============================================================================
+ * grid_trylockPoint
+ * =============================================================================
+ */
+int grid_trylockPoint (grid_t* gridPtr, long x, long y, long z){
+  int ret = Pthread_mutex_trylock(ignore, NULL, &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
+  if (ret != 0 && ret != EBUSY) {
+    errno = ret;
+    perror("grid_trylockPoint: failed to lock point\n");
+    exit(-4);
+  }
+  return ret;
 }
 
 /* =============================================================================
  * grid_unlockPoint
  * =============================================================================
  */
-bool_t grid_unlockPoint (grid_t* gridPtr, long x, long y, long z){
-  fprintf(stderr, "unlocking point (%ld, %ld, %ld) ------------ ", x, y, z);
-  if (Pthread_mutex_unlock(print_error, "grid_unlockPoint: failed to unlock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x])) 
-    return FALSE;
-
-  fprintf(stderr, "released lock\n");
-  return TRUE;
+void grid_unlockPoint (grid_t* gridPtr, long x, long y, long z){
+  Pthread_mutex_unlock(print_error, "grid_unlockPoint: failed to unlock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
 }
 
 /* =============================================================================
  * grid_lockPointPtr
  * =============================================================================
  */
-bool_t grid_lockPointPtr (grid_t* gridPtr, long *gridPointPtr){
-  fprintf(stderr, "locking point %p ------------ ", (void *) gridPointPtr);
+void grid_lockPointPtr (grid_t* gridPtr, long *gridPointPtr){
   long diff = (gridPointPtr - gridPtr->points);
-  if (Pthread_mutex_lock(abort_exec, "grid_lockPoint: failed to lock mutex", &gridPtr->locks[diff]))
-    return FALSE;
-
-  fprintf(stderr, "got lock\n");
-  return TRUE;
+  Pthread_mutex_lock(abort_exec, "grid_lockPointPtr: failed to lock mutex", &gridPtr->locks[diff]);
 }
 
 /* =============================================================================
  * grid_unlockPointPtr
  * =============================================================================
  */
-bool_t grid_unlockPointPtr (grid_t* gridPtr, long *gridPointPtr){
-  fprintf(stderr, "unlocking point %p ------------ ", (void *) gridPointPtr);
+void grid_unlockPointPtr (grid_t* gridPtr, long *gridPointPtr){
   long diff = (gridPointPtr - gridPtr->points);
-  if (Pthread_mutex_unlock(abort_exec, "grid_unlockPoint: failed to unlock mutex", &gridPtr->locks[diff])) 
-    return FALSE;
+  Pthread_mutex_unlock(abort_exec, "grid_unlockPointPtr: failed to unlock mutex", &gridPtr->locks[diff]);
+}
 
-  fprintf(stderr, "released lock\n");
-  return TRUE;
+/* =============================================================================
+ * grid_trylockPointPtr
+ * =============================================================================
+ */
+int grid_trylockPointPtr (grid_t* gridPtr, long *gridPointPtr){
+  long diff = (gridPointPtr - gridPtr->points);
+  int ret = Pthread_mutex_trylock(ignore, "grid_trylockPointPtr: failed to unlock mutex", &gridPtr->locks[diff]);
+  if (ret != 0 && ret != EBUSY) {
+    errno = ret;
+    perror("grid_trylockPointPtr: failed to lock point\n");
+    exit(-4);
+  }
+  return ret;
 }
 
 /* =============================================================================
@@ -310,6 +319,7 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
   for (i = 1; i < (n-1); i++) {
     long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
     *gridPointPtr = GRID_POINT_FULL; 
+    grid_unlockPointPtr(gridPtr, gridPointPtr);
   }
 }
 
@@ -338,33 +348,34 @@ bool_t grid_checkPath_Ptr(grid_t* gridPtr, vector_t* pointVectorPtr){
   long n = vector_getSize(pointVectorPtr);
 
   vector_sort(pointVectorPtr, compare_positions);
-  /*
-  printf("==================== UNORDERED ===================\n");
-  */
   for (i = 1; i < (n-1); i++) {
     long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
-    /*
     long x, y, z;
     grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
-    printf("%lx %lx %lx\n", x, y, z);
-    */
     
-    if (*gridPointPtr == GRID_POINT_FULL) {
+    int tries = 1;
+    int ret = grid_trylockPointPtr(gridPtr, gridPointPtr); 
+    while (ret == EBUSY && tries < MAX_TRIES) {
+      tries++;
+      ret = grid_trylockPointPtr(gridPtr, gridPointPtr); 
+      struct timespec req;
+      req.tv_sec = 0;
+      req.tv_nsec = random() % MAX_TIMEOUT;
+      if (nanosleep(&req, NULL)) {
+        perror("grid_checkGrid: nanosleep");
+        exit(-1);
+      }
+    }
+    
+    if (ret == EBUSY || *gridPointPtr == GRID_POINT_FULL) {
+      int last_locked = (ret == EBUSY) ? i - 1 : i;
+      for (int j = 1; j <= last_locked; j++) {
+        long* gridPointPtr = (long*)vector_at(pointVectorPtr, j);
+        grid_unlockPointPtr(gridPtr, gridPointPtr);
+      }
       return FALSE;
     }
   }
-
-
-
-  /*
-  printf("==================== ORDERED ===================\n");
-  for (i = 1; i < (n-1); i++) {
-    long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
-    long x, y, z;
-    grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
-    printf("%lx %lx %lx\n", x, y, z);
-  }
-  */
 
   return TRUE;
 

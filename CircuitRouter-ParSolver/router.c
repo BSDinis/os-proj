@@ -312,16 +312,20 @@ void *router_solve (void* argPtr){
   while (1) {
 
     pair_t* coordinatePairPtr;
-    if (queue_isEmpty(workQueuePtr)) {
+    
+    Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex);
+    bool_t empty= queue_isEmpty(workQueuePtr);
+    coordinatePairPtr = queue_pop(workQueuePtr);
+    if (empty) {
       coordinatePairPtr = NULL;
     } else {
-      Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex);
       coordinatePairPtr = queue_pop(workQueuePtr);
-      Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
     }
     if (coordinatePairPtr == NULL) {
+      Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
       break;
     }
+    Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
 
     coordinate_t* srcPtr = coordinatePairPtr->firstPtr;
     coordinate_t* dstPtr = coordinatePairPtr->secondPtr;
@@ -331,14 +335,13 @@ void *router_solve (void* argPtr){
 
     /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
     grid_copy(myGridPtr, gridPtr);
+    //fprintf(stderr, "working on (%lx, %lx %lx) --> (%lx, %lx, %lx)\n", srcPtr->x, srcPtr->y, srcPtr->z, dstPtr->x, dstPtr->y, dstPtr->z);
     if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
              srcPtr, dstPtr)) {
       pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
       if (pointVectorPtr) {
-        Pthread_mutex_lock(abort_exec, "router_solve: failed to lock grid", gridPtr->locks);
         if ((success = grid_checkPath_Ptr(gridPtr, pointVectorPtr)) == TRUE)
           grid_addPath_Ptr(gridPtr, pointVectorPtr);
-        Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock grid", gridPtr->locks);
       }
     }
 
@@ -349,7 +352,9 @@ void *router_solve (void* argPtr){
     }
     else {
       // failed, retry
+      Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex);
       queue_push(workQueuePtr, (void*)coordinatePairPtr);
+      Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
       if (pointVectorPtr) vector_free(pointVectorPtr);
     }
     

@@ -245,7 +245,18 @@ int main(int argc, char** argv){
   pthread_mutex_t * workQueueMutex = malloc(sizeof(pthread_mutex_t));
   assert(workQueueMutex);
   Pthread_mutex_init(abort_exec, "failed to initialize the work queue mutex", workQueueMutex, NULL);
-
+  
+  // seed random
+  /*
+  unsigned long long seed;
+  struct timespec curr_time;
+  if (clock_gettime(CLOCK_REALTIME, &curr_time)) {
+    perror("clock_gettime");
+    exit(-1);
+  }
+  seed = (unsigned int) (((curr_time.tv_sec >> (sizeof(unsigned int)/4 - 1) ) & (sizeof(unsigned int)/2 - 1)) ^ (curr_time.tv_nsec & (sizeof(unsigned int) - 1)));
+  srandom(seed);
+  */
 
   router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr, workQueueMutex};
   TIMER_T startTime;
