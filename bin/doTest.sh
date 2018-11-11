@@ -27,7 +27,7 @@ add_new_entry () {
   #fi
   echo "$1"
   speedup=$(echo "scale=6; ${sequential}/$3" | bc)
-  echo $2",\t\t\t\t"$3",\t"${speedup} >> $1
+  echo $2",\t\t"$3",\t"${speedup} >> $1
 }
 
 
@@ -45,7 +45,7 @@ echo "== inpufile: "$2" =="
 echo "== speedup_file: "${new_speedup_file}" =="
 
 
-echo "#n_threads,\t\ttime,\t\tspeedup" >> ${speedup_file}
+echo "#n_threads,\ttime,\t\tspeedup" >> ${speedup_file}
 echo "== Running sequential =="
 ../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver $2
 sequential=$(grep "Elapsed time" $2.res | cut -d " " -f 5)
