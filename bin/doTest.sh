@@ -5,8 +5,18 @@
 seq="../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver"
 par="../CircuitRouter-ParSolver/CircuitRouter-ParSolver"
 
-if [[ -v PROF ]]
+mem="no"
+prof="no"
+if [[ -v MEM ]]
 then
+  mem="yes"
+  echo "Memory Checking enabled"
+  echo
+  echo
+  echo "Starting"
+elif [[ -v PROF ]]
+then
+  prof="yes"
   echo "Profiling enabled"
   echo
   echo
@@ -29,6 +39,10 @@ then
 elif [[ ! -x $seq || ! -x $par ]]
 then
   echo "executables not found"
+  exit 1
+elif [[ $1 -lt 1 ]]
+then
+  echo "number of threads must be positive"
   exit 1
 fi
 
@@ -60,8 +74,14 @@ echo "== speedup_file: "${new_speedup_file}" =="
 
 echo "#n_threads,\ttime,\t\tspeedup" >> ${speedup_file}
 echo "== Running sequential =="
-../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver $2
-if [[ -v PROF ]]
+if [[ $mem == "yes" ]] 
+then
+  valgrind ../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver $2
+else
+  ../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver $2
+fi
+
+if [[ $prof == "yes"  ]]
 then
   if [[ -a ../profiles/$2.prof ]]
   then
@@ -78,9 +98,14 @@ echo "== Done == "
 for i in {1..$1} 
 do
   echo "== Running parallel w/ "$i" threads =="
-  ../CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $2 ;
+  if [[ $mem == "yes" ]]
+  then
+    valgrind --leak-check=full ../CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $2 ;
+  else
+    ../CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $2 ;
+  fi
   ret=$?
-  if [[ -v PROF ]]
+  if [[ $prof == "yes" ]]
   then
     if [[ -a ../profiles/$(basename $2.$i.prof) ]]
     then
