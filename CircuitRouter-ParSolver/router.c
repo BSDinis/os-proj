@@ -297,7 +297,7 @@ void *router_solve (void* argPtr){
 
   queue_t* workQueuePtr = mazePtr->workQueuePtr;
   pthread_mutex_t* work_queue_mutex = routerArgPtr->workQueueMutex;
-  assert(work_queue_mutex);
+  pthread_mutex_t* list_mutex = routerArgPtr->listMutex;
 
   grid_t* gridPtr = mazePtr->gridPtr;
   grid_t* myGridPtr = grid_alloc(gridPtr->width, gridPtr->height, gridPtr->depth);
@@ -315,7 +315,6 @@ void *router_solve (void* argPtr){
     
     Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex);
     bool_t empty= queue_isEmpty(workQueuePtr);
-    coordinatePairPtr = queue_pop(workQueuePtr);
     if (empty) {
       coordinatePairPtr = NULL;
     } else {
@@ -330,12 +329,12 @@ void *router_solve (void* argPtr){
     coordinate_t* srcPtr = coordinatePairPtr->firstPtr;
     coordinate_t* dstPtr = coordinatePairPtr->secondPtr;
 
+
     bool_t success = FALSE;
     vector_t* pointVectorPtr = NULL;
 
     /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
     grid_copy(myGridPtr, gridPtr);
-    //fprintf(stderr, "working on (%lx, %lx %lx) --> (%lx, %lx, %lx)\n", srcPtr->x, srcPtr->y, srcPtr->z, dstPtr->x, dstPtr->y, dstPtr->z);
     if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
              srcPtr, dstPtr)) {
       pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
@@ -352,7 +351,7 @@ void *router_solve (void* argPtr){
     }
     else {
       // failed, retry
-      Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex);
+      Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex); 
       queue_push(workQueuePtr, (void*)coordinatePairPtr);
       Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
       if (pointVectorPtr) vector_free(pointVectorPtr);
@@ -364,7 +363,9 @@ void *router_solve (void* argPtr){
    * Add my paths to global list
    */
   list_t* pathVectorListPtr = routerArgPtr->pathVectorListPtr;
+  Pthread_mutex_lock(abort_exec, "router_solve: failed to lock list", list_mutex);
   list_insert(pathVectorListPtr, (void*)myPathVectorPtr);
+  Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock list", list_mutex);
 
   grid_free(myGridPtr);
   queue_free(myExpansionQueuePtr);
