@@ -57,6 +57,12 @@ for i in {1..$1}
 do
   echo "== Running parallel w/ "$i" threads =="
   ../CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $2 ;
+  ret=$?
+  if [[ $ret -ne 0 ]]
+  then
+    echo "An error occurred: ParSolver returned "$ret". Aborting"
+    exit $ret
+  fi
   timed=$(grep "Elapsed time" $2.res | cut -d " " -f 5)
   add_new_entry $speedup_file $i $timed
   echo "== Time: "$timed
