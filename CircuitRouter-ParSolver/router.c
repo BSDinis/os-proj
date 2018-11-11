@@ -88,8 +88,6 @@ point_t MOVE_NEGX = {-1, 0, 0, 0, MOMENTUM_NEGX};
 point_t MOVE_NEGY = { 0, -1, 0, 0, MOMENTUM_NEGY};
 point_t MOVE_NEGZ = { 0, 0, -1, 0, MOMENTUM_NEGZ};
 
-static pthread_mutex_t work_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 /* =============================================================================
  * router_alloc
  * =============================================================================
@@ -298,6 +296,9 @@ void *router_solve (void* argPtr){
   assert(myPathVectorPtr);
 
   queue_t* workQueuePtr = mazePtr->workQueuePtr;
+  pthread_mutex_t* work_queue_mutex = routerArgPtr->workQueueMutex;
+  assert(work_queue_mutex);
+
   grid_t* gridPtr = mazePtr->gridPtr;
   grid_t* myGridPtr = grid_alloc(gridPtr->width, gridPtr->height, gridPtr->depth);
   assert(myGridPtr);
@@ -314,9 +315,9 @@ void *router_solve (void* argPtr){
     if (queue_isEmpty(workQueuePtr)) {
       coordinatePairPtr = NULL;
     } else {
-      Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", &work_queue_mutex);
+      Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex);
       coordinatePairPtr = queue_pop(workQueuePtr);
-      Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", &work_queue_mutex);
+      Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
     }
     if (coordinatePairPtr == NULL) {
       break;
