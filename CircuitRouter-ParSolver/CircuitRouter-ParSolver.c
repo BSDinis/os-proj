@@ -247,27 +247,11 @@ int main(int argc, char** argv){
   TIMER_READ(startTime);
 
 
-  for (long i = 0; i < nthreads; i++) {
-    errno = 0;
-    int ret = pthread_create(&working_threads[i], NULL, router_solve, (void *)&routerArg);
-    if (ret != 0) {
-      //error
-      fprintf(stderr, "pthread_create (%ld threads created so far): ", i);
-      perror("router_solver");
-      abort();
-    }
-  }
+  for (long i = 0; i < nthreads; i++) 
+    Pthread_create(abort_exec, &working_threads[i], NULL, router_solve, (void *)&routerArg);
   
-  for (long i = 0; i < nthreads; i++) {
-    errno = 0;
-    int ret = pthread_join(working_threads[i], NULL);
-    if (ret != 0) {
-      //error
-      fprintf(stderr, "pthread_join (%ldth thread): ", i);
-      perror("router_solver");
-      abort();
-    }
-  }
+  for (long i = 0; i < nthreads; i++) 
+    Pthread_join(abort_exec, working_threads[i], NULL);
 
   TIMER_T stopTime;
   TIMER_READ(stopTime);
