@@ -30,11 +30,13 @@ static void handle_error(wrapper_action action, int error_code, const char * con
       errno = error_code;
       if (error_string)
         perror(error_string);
+      break;
     case ignore:
       break; // BAD
     default:
       fprintf(stderr, "pthread_wrappers: invalid action: aborting\n");
       exit(-4);
+      break;
   }
 }
 
@@ -133,7 +135,7 @@ int Pthread_mutex_trylock (wrapper_action action, const char * const error_strin
 
 int Pthread_mutex_lock (wrapper_action action, const char * const error_string, pthread_mutex_t *__mutex)
 {
-  int ret = pthread_mutex_trylock(__mutex);
+  int ret = pthread_mutex_lock(__mutex);
   if (ret)
     handle_error(action, ret, error_string);
 
