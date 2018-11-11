@@ -13,6 +13,6 @@ do
   echo " == SOLVING FILE " $file
   echo "============================================================"
   echo
-  ./doTest.sh $1 ../inputs/$file
+  ../bin/doTest.sh $1 ../inputs/$file
 done
 
