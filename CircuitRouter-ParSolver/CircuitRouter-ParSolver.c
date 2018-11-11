@@ -55,6 +55,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <pthread.h>
+#include "pthread_wrappers.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
