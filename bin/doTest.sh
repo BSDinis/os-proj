@@ -47,11 +47,11 @@ then
 fi
 
 add_new_entry () {
-  #if [ $# -ne 3 ]
-  #then
-    #echo "usage: $0 <file> <row_name> <time>"
-    #exit 1
-  #fi
+  if [ $# -ne 3 ]
+  then
+    echo "usage: $0 <file> <row_name> <time>"
+    exit 1
+  fi
   echo "$1"
   speedup=$(echo "scale=6; ${sequential}/$3" | bc)
   echo $2",\t\t"$3",\t"${speedup} >> $1
