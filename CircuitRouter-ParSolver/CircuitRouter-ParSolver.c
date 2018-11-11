@@ -242,7 +242,12 @@ int main(int argc, char** argv){
   list_t* pathVectorListPtr = list_alloc(NULL);
   assert(pathVectorListPtr);
 
-  router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr};
+  pthread_mutex_t * workQueueMutex = malloc(sizeof(pthread_mutex_t));
+  assert(workQueueMutex);
+  Pthread_mutex_init(abort_exec, "failed to initialize the work queue mutex", workQueueMutex, NULL);
+
+
+  router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr, workQueueMutex};
   TIMER_T startTime;
   TIMER_READ(startTime);
 
@@ -256,6 +261,8 @@ int main(int argc, char** argv){
   TIMER_T stopTime;
   TIMER_READ(stopTime);
   free(working_threads);
+  Pthread_mutex_destroy(print_error, "failed to destroy mutex", workQueueMutex);
+  free(workQueueMutex);
 
   long numPathRouted = 0;
   list_iter_t it;

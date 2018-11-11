@@ -182,7 +182,7 @@ void grid_getPointIndices (grid_t* gridPtr, long* gridPointPtr, long* xPtr, long
   long height = gridPtr->height;
   long width = gridPtr->width;
   long area = height * width;
-  long index3d = (gridPointPtr - gridPtr->points);
+  long index3d = (gridPointPtr - gridPtr->points); // pointer - base
   (*zPtr) = index3d / area;
   long index2d = index3d % area;
   (*yPtr) = index2d / width;
@@ -254,6 +254,34 @@ bool_t grid_unlockPoint (grid_t* gridPtr, long x, long y, long z){
 }
 
 /* =============================================================================
+ * grid_lockPointPtr
+ * =============================================================================
+ */
+bool_t grid_lockPointPtr (grid_t* gridPtr, long *gridPointPtr){
+  fprintf(stderr, "locking point %p ------------ ", (void *) gridPointPtr);
+  long diff = (gridPointPtr - gridPtr->points);
+  if (Pthread_mutex_lock(abort_exec, "grid_lockPoint: failed to lock mutex", &gridPtr->locks[diff]))
+    return FALSE;
+
+  fprintf(stderr, "got lock\n");
+  return TRUE;
+}
+
+/* =============================================================================
+ * grid_unlockPointPtr
+ * =============================================================================
+ */
+bool_t grid_unlockPointPtr (grid_t* gridPtr, long *gridPointPtr){
+  fprintf(stderr, "unlocking point %p ------------ ", (void *) gridPointPtr);
+  long diff = (gridPointPtr - gridPtr->points);
+  if (Pthread_mutex_unlock(abort_exec, "grid_unlockPoint: failed to unlock mutex", &gridPtr->locks[diff])) 
+    return FALSE;
+
+  fprintf(stderr, "released lock\n");
+  return TRUE;
+}
+
+/* =============================================================================
  * grid_addPath
  * =============================================================================
  */
@@ -285,6 +313,21 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
   }
 }
 
+/* =============================================================================
+ * compare two positions
+ * =============================================================================
+ */
+int compare_positions(const void * a, const void *b) 
+{
+  /* this works ou quite nicely, because of the way the grid is mapped to mem */
+  /* this orders points (a.x, a.y, a.z) and (b.x, b.y, b.z) with the predicate
+   *
+   * a < b iff
+   * a.z < b.z || (a.z == b.z && a.y < b.y) || (a.z == b.z && a.y == b.y && a.x < b.x)
+   */
+  return (int) (((const long *) a)  - ((const long *) b));
+}
+
 
 /* =============================================================================
  * grid_checkPath_Ptr
@@ -294,14 +337,37 @@ bool_t grid_checkPath_Ptr(grid_t* gridPtr, vector_t* pointVectorPtr){
   long i;
   long n = vector_getSize(pointVectorPtr);
 
+  vector_sort(pointVectorPtr, compare_positions);
+  /*
+  printf("==================== UNORDERED ===================\n");
+  */
   for (i = 1; i < (n-1); i++) {
     long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
+    /*
+    long x, y, z;
+    grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
+    printf("%lx %lx %lx\n", x, y, z);
+    */
+    
     if (*gridPointPtr == GRID_POINT_FULL) {
       return FALSE;
     }
   }
 
+
+
+  /*
+  printf("==================== ORDERED ===================\n");
+  for (i = 1; i < (n-1); i++) {
+    long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
+    long x, y, z;
+    grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
+    printf("%lx %lx %lx\n", x, y, z);
+  }
+  */
+
   return TRUE;
+
 }
 
 /* =============================================================================
