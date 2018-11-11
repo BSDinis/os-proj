@@ -54,6 +54,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include "pthread_wrappers.h"
 
 #include "coordinate.h"
 #include "grid.h"
@@ -87,7 +88,7 @@ point_t MOVE_NEGX = {-1, 0, 0, 0, MOMENTUM_NEGX};
 point_t MOVE_NEGY = { 0, -1, 0, 0, MOMENTUM_NEGY};
 point_t MOVE_NEGZ = { 0, 0, -1, 0, MOMENTUM_NEGZ};
 
-pthread_mutex_t work_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t work_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* =============================================================================
  * router_alloc
@@ -313,9 +314,9 @@ void *router_solve (void* argPtr){
     if (queue_isEmpty(workQueuePtr)) {
       coordinatePairPtr = NULL;
     } else {
-      pthread_mutex_lock(&work_queue_mutex);
+      Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", &work_queue_mutex);
       coordinatePairPtr = queue_pop(workQueuePtr);
-      pthread_mutex_unlock(&work_queue_mutex);
+      Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", &work_queue_mutex);
     }
     if (coordinatePairPtr == NULL) {
       break;
@@ -333,10 +334,10 @@ void *router_solve (void* argPtr){
              srcPtr, dstPtr)) {
       pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
       if (pointVectorPtr) {
-        pthread_mutex_lock(gridPtr->locks);
+        Pthread_mutex_lock(abort_exec, "router_solve: failed to lock grid", gridPtr->locks);
         if ((success = grid_checkPath_Ptr(gridPtr, pointVectorPtr)) == TRUE)
           grid_addPath_Ptr(gridPtr, pointVectorPtr);
-        pthread_mutex_unlock(gridPtr->locks);
+        Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock grid", gridPtr->locks);
       }
     }
 

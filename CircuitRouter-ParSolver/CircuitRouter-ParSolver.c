@@ -248,10 +248,10 @@ int main(int argc, char** argv){
 
 
   for (long i = 0; i < nthreads; i++) 
-    Pthread_create(abort_exec, &working_threads[i], NULL, router_solve, (void *)&routerArg);
+    Pthread_create(abort_exec, "failed to create thread", &working_threads[i], NULL, router_solve, (void *)&routerArg);
   
   for (long i = 0; i < nthreads; i++) 
-    Pthread_join(abort_exec, working_threads[i], NULL);
+    Pthread_join(abort_exec, "failed to join thread", working_threads[i], NULL);
 
   TIMER_T stopTime;
   TIMER_READ(stopTime);
