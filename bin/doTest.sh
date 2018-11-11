@@ -5,6 +5,19 @@
 seq="../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver"
 par="../CircuitRouter-ParSolver/CircuitRouter-ParSolver"
 
+if [[ -v PROF ]]
+then
+  echo "Profiling enabled"
+  echo
+  echo
+  make -C .. clean
+  make -C .. PROF=yes
+  echo
+  echo
+  echo "Starting"
+fi
+
+
 if [ $# -ne 2 ]
 then
   echo "usage: $0 <n_threads> <input_file>"
@@ -48,6 +61,15 @@ echo "== speedup_file: "${new_speedup_file}" =="
 echo "#n_threads,\ttime,\t\tspeedup" >> ${speedup_file}
 echo "== Running sequential =="
 ../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver $2
+if [[ -v PROF ]]
+then
+  if [[ -a ../profiles/$2.prof ]]
+  then
+    mv ../profiles/$2.prof ../profiles/$2.prof.old
+  fi
+  echo "profiling to "../profiles/$2.prof
+  gprof -p -q -r ../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver gmon.out > ../profiles/$2.prof
+fi
 sequential=$(grep "Elapsed time" $2.res | cut -d " " -f 5)
 add_new_entry $speedup_file 1S $sequential
 echo "== Time: "$sequential
@@ -58,6 +80,15 @@ do
   echo "== Running parallel w/ "$i" threads =="
   ../CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $i $2 ;
   ret=$?
+  if [[ -v PROF ]]
+  then
+    if [[ -a ../profiles/$(basename $2.$i.prof) ]]
+    then
+      mv ../profiles/$(basename $2.$i.prof) ../profiles/$(basename $2.$i.prof.old)
+    fi
+    echo "profiling to "../profiles/$(basename $2.$i.prof)
+    gprof -p -q -r ../CircuitRouter-ParSolver/CircuitRouter-ParSolver gmon.out > ../profiles/$(basename $2.$i.prof)
+  fi
   if [[ $ret -ne 0 ]]
   then
     echo "An error occurred: ParSolver returned "$ret". Aborting"
@@ -72,3 +103,4 @@ done
 # wrappup
 # This should be a move, but my hands were tied
 cp $speedup_file $new_speedup_file
+rm -f gmon.out
