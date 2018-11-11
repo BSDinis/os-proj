@@ -55,6 +55,9 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include "pthread_wrappers.h"
+
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/types.h"
@@ -80,7 +83,7 @@ grid_t* grid_alloc (long width, long height, long depth){
     long* points_unaligned = (long*)malloc(n * sizeof(long) + CACHE_LINE_SIZE);
     assert(points_unaligned);
     gridPtr->locks = malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(gridPtr->locks, NULL);
+    Pthread_mutex_init(abort_exec, "grid_alloc: failed to init mutex", gridPtr->locks, NULL);
     /*
     gridPtr->locks_unaligned = (pthread_mutex_t *)malloc(n * sizeof(pthread_mutex_t) + CACHE_LINE_SIZE);
     assert(gridPtr->locks_unaligned);*/
@@ -109,8 +112,7 @@ grid_t* grid_alloc (long width, long height, long depth){
 
     /*
     for (long i = 0; i < n; i++) {
-      if (errno = pthread_mutex_init(&gridPtr->locks[i], NULL)) {
-        perror("grid_alloc: pthread_mutex_init");
+      if (Pthread_mutex_init(print_error, "grid_alloc: failed to init mutex", &gridPtr->locks[i], NULL)) {
         grid_free(gridPtr);
         return NULL;
       }
@@ -231,11 +233,9 @@ void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
  */
 bool_t grid_lockPoint (grid_t* gridPtr, long x, long y, long z){
   fprintf(stderr, "locking point (%ld, %ld, %ld) ------------ ", x, y, z);
-  errno = pthread_mutex_lock(&gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
-  if (errno) {
-    perror("grid_lockPoint: pthread_mutex_lock");
+  if (Pthread_mutex_lock(print_error, "grid_lockPoint: failed to lock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x])) 
     return FALSE;
-  }
+
   fprintf(stderr, "got lock\n");
   return TRUE;
 }
@@ -246,11 +246,9 @@ bool_t grid_lockPoint (grid_t* gridPtr, long x, long y, long z){
  */
 bool_t grid_unlockPoint (grid_t* gridPtr, long x, long y, long z){
   fprintf(stderr, "unlocking point (%ld, %ld, %ld) ------------ ", x, y, z);
-  errno = pthread_mutex_unlock(&gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
-  if (errno) {
-    perror("grid_unlockPoint: pthread_mutex_unlock");
+  if (Pthread_mutex_unlock(print_error, "grid_unlockPoint: failed to unlock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x])) 
     return FALSE;
-  }
+
   fprintf(stderr, "released lock\n");
   return TRUE;
 }
