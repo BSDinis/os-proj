@@ -85,7 +85,7 @@ if [[ $prof == "yes"  ]]
 then
   if [[ -a ../profiles/$2.prof ]]
   then
-    mv ../profiles/$2.prof ../profiles/$2.prof.old
+    mv ../profiles/$(basename $2).prof ../profiles/$(basename $2).prof.old
   fi
   echo "profiling to "../profiles/$2.prof
   gprof -p -q -r ../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver gmon.out > ../profiles/$2.prof
