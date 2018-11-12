@@ -147,6 +147,13 @@ bool_t grid_isPointFull (grid_t* gridPtr, long x, long y, long z);
  */
 void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value);
 
+/* =============================================================================
+ * grid_distToEdge
+ * =============================================================================
+ */
+long grid_distToEdge (grid_t* gridPtr, long x, long y, long z);
+
+
 
 /* =============================================================================
  * grid_addPath

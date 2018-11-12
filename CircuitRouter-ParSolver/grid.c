@@ -289,6 +289,18 @@ void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
   (*grid_getPointRef(gridPtr, x, y, z)) = value;
 }
 
+/* =============================================================================
+ * grid_distToEdge
+ * =============================================================================
+ */
+long grid_distToEdge (grid_t* gridPtr, long x, long y, long z)
+{
+  long a = (gridPtr->width - x > x) ? x : gridPtr->width - x;
+  long b = (gridPtr->height - y > y) ? x : gridPtr->height - y;
+  long c = (gridPtr->depth - z > z) ? z : gridPtr->depth - z;
+  return a + b + c;   
+}
+
 
 /* =============================================================================
  * grid_addPath

@@ -152,6 +152,12 @@ static bool_t doExpansion (router_t* routerPtr, grid_t* myGridPtr, queue_t* queu
    * This will likely decrease the area of the emitted wave.
    */
 
+  if (grid_distToEdge(myGridPtr, dstPtr->x, dstPtr->y, dstPtr->z) < grid_distToEdge(myGridPtr, srcPtr->x, srcPtr->y, srcPtr->z)) {
+    coordinate_t *tmp = srcPtr;
+    srcPtr = dstPtr;
+    dstPtr = tmp;
+  }
+  
   queue_clear(queuePtr);
   long* srcGridPointPtr = grid_getPointRef(myGridPtr, srcPtr->x, srcPtr->y, srcPtr->z);
   queue_push(queuePtr, (void*)srcGridPointPtr);
