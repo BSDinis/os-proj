@@ -127,5 +127,12 @@ done
 
 # wrappup
 # This should be a move, but my hands were tied
-cp $speedup_file $new_speedup_file
-rm -f gmon.out
+if [[ $store_speedup == "yes" ]]
+then
+  cp $speedup_file $new_speedup_file
+fi
+
+if [[ $prof == "yes" ]]
+then
+  rm -f gmon.out
+fi
