@@ -15,3 +15,4 @@ test_hashtable
 vgcore*
 *.zip
 *speedups.csv
+profiles

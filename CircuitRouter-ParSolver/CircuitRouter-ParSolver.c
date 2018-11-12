@@ -242,7 +242,25 @@ int main(int argc, char** argv){
   list_t* pathVectorListPtr = list_alloc(NULL);
   assert(pathVectorListPtr);
 
-  router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr};
+  pthread_mutex_t * workQueueMutex = malloc(sizeof(pthread_mutex_t));
+  assert(workQueueMutex);
+  Pthread_mutex_init(abort_exec, "failed to initialize the work queue mutex", workQueueMutex, NULL);
+
+  pthread_mutex_t * listMutex = malloc(sizeof(pthread_mutex_t));
+  assert(listMutex);
+  Pthread_mutex_init(abort_exec, "failed to initialize the list mutex", listMutex, NULL);
+  
+  // seed random
+  unsigned long long seed;
+  struct timespec curr_time;
+  if (clock_gettime(CLOCK_REALTIME, &curr_time)) {
+    perror("clock_gettime");
+    exit(-1);
+  }
+  seed = (unsigned int) (((curr_time.tv_sec >> (sizeof(unsigned int)/4 - 1) ) & (sizeof(unsigned int)/2 - 1)) ^ (curr_time.tv_nsec & (sizeof(unsigned int) - 1)));
+  srandom(seed);
+
+  router_solve_arg_t routerArg = {routerPtr, mazePtr, pathVectorListPtr, workQueueMutex, listMutex};
   TIMER_T startTime;
   TIMER_READ(startTime);
 
@@ -255,7 +273,12 @@ int main(int argc, char** argv){
 
   TIMER_T stopTime;
   TIMER_READ(stopTime);
+
   free(working_threads);
+  Pthread_mutex_destroy(print_error, "failed to destroy mutex", workQueueMutex);
+  free(workQueueMutex);
+  Pthread_mutex_destroy(print_error, "failed to destroy mutex", listMutex);
+  free(listMutex);
 
   long numPathRouted = 0;
   list_iter_t it;
@@ -293,7 +316,7 @@ int main(int argc, char** argv){
   list_free(pathVectorListPtr);
 
 
-  exit(0);
+  return 0;
 }
 
 

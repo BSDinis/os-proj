@@ -51,6 +51,7 @@ extern int Pthread_mutex_init (wrapper_action action, const char * const error_s
 
 extern int Pthread_mutex_destroy (wrapper_action action, const char * const error_string, pthread_mutex_t *__mutex);
 
+// here you must ignore - the return code is not an error 
 extern int Pthread_mutex_trylock (wrapper_action action, const char * const error_string, pthread_mutex_t *__mutex);
 
 extern int Pthread_mutex_lock (wrapper_action action, const char * const error_string, pthread_mutex_t *__mutex);

@@ -88,8 +88,6 @@ point_t MOVE_NEGX = {-1, 0, 0, 0, MOMENTUM_NEGX};
 point_t MOVE_NEGY = { 0, -1, 0, 0, MOMENTUM_NEGY};
 point_t MOVE_NEGZ = { 0, 0, -1, 0, MOMENTUM_NEGZ};
 
-static pthread_mutex_t work_queue_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 /* =============================================================================
  * router_alloc
  * =============================================================================
@@ -298,6 +296,9 @@ void *router_solve (void* argPtr){
   assert(myPathVectorPtr);
 
   queue_t* workQueuePtr = mazePtr->workQueuePtr;
+  pthread_mutex_t* work_queue_mutex = routerArgPtr->workQueueMutex;
+  pthread_mutex_t* list_mutex = routerArgPtr->listMutex;
+
   grid_t* gridPtr = mazePtr->gridPtr;
   grid_t* myGridPtr = grid_alloc(gridPtr->width, gridPtr->height, gridPtr->depth);
   assert(myGridPtr);
@@ -311,13 +312,16 @@ void *router_solve (void* argPtr){
   while (1) {
 
     pair_t* coordinatePairPtr;
-    if (queue_isEmpty(workQueuePtr)) {
+    
+    Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex);
+    bool_t empty= queue_isEmpty(workQueuePtr);
+    if (empty) {
       coordinatePairPtr = NULL;
     } else {
-      Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", &work_queue_mutex);
       coordinatePairPtr = queue_pop(workQueuePtr);
-      Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", &work_queue_mutex);
     }
+    Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
+
     if (coordinatePairPtr == NULL) {
       break;
     }
@@ -325,31 +329,37 @@ void *router_solve (void* argPtr){
     coordinate_t* srcPtr = coordinatePairPtr->firstPtr;
     coordinate_t* dstPtr = coordinatePairPtr->secondPtr;
 
+
     bool_t success = FALSE;
+    bool_t merge_success = TRUE;
     vector_t* pointVectorPtr = NULL;
 
     /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
     grid_copy(myGridPtr, gridPtr);
-    if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
-             srcPtr, dstPtr)) {
+    if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr, srcPtr, dstPtr)) {
       pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
       if (pointVectorPtr) {
-        Pthread_mutex_lock(abort_exec, "router_solve: failed to lock grid", gridPtr->locks);
-        if ((success = grid_checkPath_Ptr(gridPtr, pointVectorPtr)) == TRUE)
+        merge_success = FALSE;
+        success = FALSE;
+        if ((merge_success = grid_checkPath_Ptr(gridPtr, pointVectorPtr)) == TRUE) 
           grid_addPath_Ptr(gridPtr, pointVectorPtr);
-        Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock grid", gridPtr->locks);
       }
     }
+    
 
     if (success) {
-      bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
-      assert(status);
-      pair_free(coordinatePairPtr);
-    }
-    else {
-      // failed, retry
-      queue_push(workQueuePtr, (void*)coordinatePairPtr);
-      if (pointVectorPtr) vector_free(pointVectorPtr);
+      if (merge_success) {
+        bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
+        assert(status);
+        pair_free(coordinatePairPtr);
+      }
+      else {
+        // failed, retry
+        Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex); 
+        queue_push(workQueuePtr, (void*)coordinatePairPtr);
+        Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
+        if (pointVectorPtr) vector_free(pointVectorPtr);
+      }
     }
     
   }
@@ -358,7 +368,9 @@ void *router_solve (void* argPtr){
    * Add my paths to global list
    */
   list_t* pathVectorListPtr = routerArgPtr->pathVectorListPtr;
+  Pthread_mutex_lock(abort_exec, "router_solve: failed to lock list", list_mutex);
   list_insert(pathVectorListPtr, (void*)myPathVectorPtr);
+  Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock list", list_mutex);
 
   grid_free(myGridPtr);
   queue_free(myExpansionQueuePtr);

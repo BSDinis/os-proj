@@ -263,7 +263,7 @@ int main(int argc, char** argv){
   list_free(pathVectorListPtr);
 
 
-  exit(0);
+  return 0;
 }
 
 

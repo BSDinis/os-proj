@@ -14,6 +14,12 @@ LDLIBS := -lm # link math functs
 LDFLAGS += -L.. -L../lib
 LDLIBS += -lutils
 
+# if you run 'make PROF=yes' it will compile with information for profiler
+ifeq ($(strip $(PROF)), yes)
+ CFLAGS += -pg
+ LDFLAGS += -pg
+endif
+
 # if you run 'make DEBUG=no' it will compile without the debugger flag
 ifneq ($(strip $(DEBUG)), no)
  CFLAGS += -g
@@ -23,6 +29,7 @@ endif
 ifneq ($(strip $(OPTIM)), no)
  CFLAGS += -O2
 endif
+
 
 # SOURCES is a list of all the files in the current dir with a .c extension
 # OBJECTS is a list created by taking SOURCES and replacing the .c extension with .o
