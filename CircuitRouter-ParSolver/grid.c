@@ -65,8 +65,8 @@
 
 
 const unsigned long CACHE_LINE_SIZE = 32UL;
-#define MAX_TRIES 2
-#define MAX_TIMEOUT 1<<7
+#define MAX_TRIES (1<<1)
+#define MAX_TIMEOUT (1<<7)
 
 
 /* =============================================================================
