@@ -26,7 +26,7 @@ endif
 
 # if you run 'make OPTIM=no' it will compile without the optimizations
 ifneq ($(strip $(OPTIM)), no)
-  CFLAGS += -O3
+  CFLAGS += -O2
 endif
 
 
