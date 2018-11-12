@@ -320,41 +320,45 @@ void *router_solve (void* argPtr){
     } else {
       coordinatePairPtr = queue_pop(workQueuePtr);
     }
+    Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
+
     if (coordinatePairPtr == NULL) {
-      Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
       break;
     }
-    Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
 
     coordinate_t* srcPtr = coordinatePairPtr->firstPtr;
     coordinate_t* dstPtr = coordinatePairPtr->secondPtr;
 
 
     bool_t success = FALSE;
+    bool_t merge_success = TRUE;
     vector_t* pointVectorPtr = NULL;
 
     /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
     grid_copy(myGridPtr, gridPtr);
-    if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
-             srcPtr, dstPtr)) {
+    if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr, srcPtr, dstPtr)) {
       pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
       if (pointVectorPtr) {
-        if ((success = grid_checkPath_Ptr(gridPtr, pointVectorPtr)) == TRUE)
+        merge_success = FALSE;
+        if ((merge_success = success = grid_checkPath_Ptr(gridPtr, pointVectorPtr)) == TRUE) 
           grid_addPath_Ptr(gridPtr, pointVectorPtr);
       }
     }
+    
 
     if (success) {
-      bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
-      assert(status);
-      pair_free(coordinatePairPtr);
-    }
-    else {
-      // failed, retry
-      Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex); 
-      queue_push(workQueuePtr, (void*)coordinatePairPtr);
-      Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
-      if (pointVectorPtr) vector_free(pointVectorPtr);
+      if (merge_success) {
+        bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
+        assert(status);
+        pair_free(coordinatePairPtr);
+      }
+      else {
+        // failed, retry
+        Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex); 
+        queue_push(workQueuePtr, (void*)coordinatePairPtr);
+        Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
+        if (pointVectorPtr) vector_free(pointVectorPtr);
+      }
     }
     
   }

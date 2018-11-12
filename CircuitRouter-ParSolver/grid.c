@@ -134,6 +134,68 @@ void grid_free (grid_t* gridPtr){
   free(gridPtr);
 }
 
+/* =============================================================================
+ * grid_lockPoint
+ * =============================================================================
+ */
+void grid_lockPoint (grid_t* gridPtr, long x, long y, long z){
+  Pthread_mutex_lock(print_error, "grid_lockPoint: failed to lock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
+}
+
+/* =============================================================================
+ * grid_trylockPoint
+ * =============================================================================
+ */
+int grid_trylockPoint (grid_t* gridPtr, long x, long y, long z){
+  int ret = Pthread_mutex_trylock(ignore, NULL, &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
+  if (ret != 0 && ret != EBUSY) {
+    errno = ret;
+    perror("grid_trylockPoint: failed to lock point\n");
+    exit(-4);
+  }
+  return ret;
+}
+
+/* =============================================================================
+ * grid_unlockPoint
+ * =============================================================================
+ */
+void grid_unlockPoint (grid_t* gridPtr, long x, long y, long z){
+  Pthread_mutex_unlock(print_error, "grid_unlockPoint: failed to unlock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
+}
+
+/* =============================================================================
+ * grid_lockPointPtr
+ * =============================================================================
+ */
+void grid_lockPointPtr (grid_t* gridPtr, long *gridPointPtr){
+  long diff = (gridPointPtr - gridPtr->points);
+  Pthread_mutex_lock(abort_exec, "grid_lockPointPtr: failed to lock mutex", &gridPtr->locks[diff]);
+}
+
+/* =============================================================================
+ * grid_unlockPointPtr
+ * =============================================================================
+ */
+void grid_unlockPointPtr (grid_t* gridPtr, long *gridPointPtr){
+  long diff = (gridPointPtr - gridPtr->points);
+  Pthread_mutex_unlock(abort_exec, "grid_unlockPointPtr: failed to unlock mutex", &gridPtr->locks[diff]);
+}
+
+/* =============================================================================
+ * grid_trylockPointPtr
+ * =============================================================================
+ */
+int grid_trylockPointPtr (grid_t* gridPtr, long *gridPointPtr){
+  long diff = (gridPointPtr - gridPtr->points);
+  int ret = Pthread_mutex_trylock(ignore, "grid_trylockPointPtr: failed to unlock mutex", &gridPtr->locks[diff]);
+  if (ret != 0 && ret != EBUSY) {
+    errno = ret;
+    perror("grid_trylockPointPtr: failed to lock point\n");
+    exit(-4);
+  }
+  return ret;
+}
 
 /* =============================================================================
  * grid_copy
@@ -227,68 +289,6 @@ void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
   (*grid_getPointRef(gridPtr, x, y, z)) = value;
 }
 
-/* =============================================================================
- * grid_lockPoint
- * =============================================================================
- */
-void grid_lockPoint (grid_t* gridPtr, long x, long y, long z){
-  Pthread_mutex_lock(print_error, "grid_lockPoint: failed to lock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
-}
-
-/* =============================================================================
- * grid_trylockPoint
- * =============================================================================
- */
-int grid_trylockPoint (grid_t* gridPtr, long x, long y, long z){
-  int ret = Pthread_mutex_trylock(ignore, NULL, &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
-  if (ret != 0 && ret != EBUSY) {
-    errno = ret;
-    perror("grid_trylockPoint: failed to lock point\n");
-    exit(-4);
-  }
-  return ret;
-}
-
-/* =============================================================================
- * grid_unlockPoint
- * =============================================================================
- */
-void grid_unlockPoint (grid_t* gridPtr, long x, long y, long z){
-  Pthread_mutex_unlock(print_error, "grid_unlockPoint: failed to unlock mutex", &gridPtr->locks[(z * gridPtr->height + y) * gridPtr->width + x]);
-}
-
-/* =============================================================================
- * grid_lockPointPtr
- * =============================================================================
- */
-void grid_lockPointPtr (grid_t* gridPtr, long *gridPointPtr){
-  long diff = (gridPointPtr - gridPtr->points);
-  Pthread_mutex_lock(abort_exec, "grid_lockPointPtr: failed to lock mutex", &gridPtr->locks[diff]);
-}
-
-/* =============================================================================
- * grid_unlockPointPtr
- * =============================================================================
- */
-void grid_unlockPointPtr (grid_t* gridPtr, long *gridPointPtr){
-  long diff = (gridPointPtr - gridPtr->points);
-  Pthread_mutex_unlock(abort_exec, "grid_unlockPointPtr: failed to unlock mutex", &gridPtr->locks[diff]);
-}
-
-/* =============================================================================
- * grid_trylockPointPtr
- * =============================================================================
- */
-int grid_trylockPointPtr (grid_t* gridPtr, long *gridPointPtr){
-  long diff = (gridPointPtr - gridPtr->points);
-  int ret = Pthread_mutex_trylock(ignore, "grid_trylockPointPtr: failed to unlock mutex", &gridPtr->locks[diff]);
-  if (ret != 0 && ret != EBUSY) {
-    errno = ret;
-    perror("grid_trylockPointPtr: failed to lock point\n");
-    exit(-4);
-  }
-  return ret;
-}
 
 /* =============================================================================
  * grid_addPath
@@ -347,12 +347,10 @@ bool_t grid_checkPath_Ptr(grid_t* gridPtr, vector_t* pointVectorPtr){
   long i;
   long n = vector_getSize(pointVectorPtr);
 
-  vector_sort(pointVectorPtr, compare_positions);
+  vector_rangeSort(pointVectorPtr, 1, n - 1, compare_positions);
   for (i = 1; i < (n-1); i++) {
     long* gridPointPtr = (long*)vector_at(pointVectorPtr, i);
-    long x, y, z;
-    grid_getPointIndices(gridPtr, gridPointPtr, &x, &y, &z);
-    
+
     int tries = 1;
     int ret = grid_trylockPointPtr(gridPtr, gridPointPtr); 
     while (ret == EBUSY && tries < MAX_TRIES) {
