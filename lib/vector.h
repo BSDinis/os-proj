@@ -155,6 +155,12 @@ vector_clear (vector_t* vectorPtr);
 void
 vector_sort (vector_t* vectorPtr, int (*compare) (const void*, const void*));
 
+/* =============================================================================
+ * vector_sort
+ * =============================================================================
+ */
+void
+vector_rangeSort (vector_t* vectorPtr, long first, long last, int (*compare) (const void*, const void*));
 
 /* =============================================================================
  * vector_copy
