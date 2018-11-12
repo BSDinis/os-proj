@@ -7,6 +7,7 @@ par="../CircuitRouter-ParSolver/CircuitRouter-ParSolver"
 
 mem="no"
 prof="no"
+store_speedup="no"
 if [[ -v MEM ]]
 then
   mem="yes"
@@ -29,10 +30,6 @@ elif [[ -v STORE ]]
 then
   store_speedup="yes"
   echo "Storing speedup at ../results"
-  echo
-  echo
-  make -C .. clean
-  make -C .. PROF=yes
   echo
   echo
   echo "Starting"
@@ -80,7 +77,7 @@ echo "==          DO TEST         =="
 echo "==  run tests on ParSolver  =="
 echo "== max number of threads: "$1" =="
 echo "== inpufile: "$2" =="
-echo "== speedup_file: "${new_speedup_file}" =="
+echo "== speedup_file: "${speedup_file}" =="
 
 
 echo "#n_threads,\ttime,\t\tspeedup" >> ${speedup_file}
