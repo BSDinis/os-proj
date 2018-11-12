@@ -25,6 +25,17 @@ then
   echo
   echo
   echo "Starting"
+elif [[ -v STORE ]]
+then
+  store_speedup="yes"
+  echo "Storing speedup at ../results"
+  echo
+  echo
+  make -C .. clean
+  make -C .. PROF=yes
+  echo
+  echo
+  echo "Starting"
 fi
 
 
