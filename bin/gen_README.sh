@@ -44,7 +44,7 @@ function print_everything() {
   echo "OS information:"
   echo $(uname -a)
   echo
-  echo "CPU information:"
+  echo "CPU information: note the number of threads per core"
   echo "Via cat /proc/cpuinfo:"
   echo $(cat /proc/cpuinfo)
   echo

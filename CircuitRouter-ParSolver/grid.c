@@ -65,8 +65,8 @@
 
 
 const unsigned long CACHE_LINE_SIZE = 32UL;
-#define MAX_TRIES (1<<1)
-#define MAX_TIMEOUT (1<<7)
+#define MAX_TRIES (1<<3)
+#define MAX_TIMEOUT (1<<6)
 
 
 /* =============================================================================
@@ -339,7 +339,7 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
  * compare two positions
  * =============================================================================
  */
-int compare_positions(const void * a, const void *b) 
+static int compare_positions(const void * a, const void *b) 
 {
   /* this works ou quite nicely, because of the way the grid is mapped to mem */
   /* this orders points (a.x, a.y, a.z) and (b.x, b.y, b.z) with the predicate
