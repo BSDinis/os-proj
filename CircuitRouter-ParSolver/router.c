@@ -160,9 +160,6 @@ static bool_t doExpansion (router_t* routerPtr, grid_t* myGridPtr, queue_t* queu
   long* dstGridPointPtr = grid_getPointRef(myGridPtr, dstPtr->x, dstPtr->y, dstPtr->z);
   bool_t isPathFound = FALSE;
 
-  long old_x = -1;
-  long old_y = -1;
-  long old_z = -1;
   while (!queue_isEmpty(queuePtr)) {
 
     long* gridPointPtr = (long*)queue_pop(queuePtr);
@@ -182,16 +179,12 @@ static bool_t doExpansion (router_t* routerPtr, grid_t* myGridPtr, queue_t* queu
      *
      * Potential Optimization: Only need to check 5 of these
      */
-    if(old_x - (x+1) != 0) expandToNeighbor(myGridPtr, x+1, y,  z,  (value + xCost), queuePtr);
-    if(old_x - (x-1) != 0) expandToNeighbor(myGridPtr, x-1, y,  z,  (value + xCost), queuePtr);
-    if(old_y - (y+1) != 0) expandToNeighbor(myGridPtr, x,  y+1, z,  (value + yCost), queuePtr);
-    if(old_y - (y-1) != 0) expandToNeighbor(myGridPtr, x,  y-1, z,  (value + yCost), queuePtr);
-    if(old_z - (z+1) != 0) expandToNeighbor(myGridPtr, x,  y,  z+1, (value + zCost), queuePtr);
-    if(old_z - (z-1) != 0) expandToNeighbor(myGridPtr, x,  y,  z-1, (value + zCost), queuePtr);
-
-    old_x = x;
-    old_y = y;
-    old_z = z;
+    expandToNeighbor(myGridPtr, x+1, y,  z,  (value + xCost), queuePtr);
+    expandToNeighbor(myGridPtr, x-1, y,  z,  (value + xCost), queuePtr);
+    expandToNeighbor(myGridPtr, x,  y+1, z,  (value + yCost), queuePtr);
+    expandToNeighbor(myGridPtr, x,  y-1, z,  (value + yCost), queuePtr);
+    expandToNeighbor(myGridPtr, x,  y,  z+1, (value + zCost), queuePtr);
+    expandToNeighbor(myGridPtr, x,  y,  z-1, (value + zCost), queuePtr);
 
   } /* iterate over work queue */
 
@@ -347,7 +340,7 @@ void *router_solve (void* argPtr){
       pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
       if (pointVectorPtr) {
         merge_success = FALSE;
-        success = FALSE;
+        success = TRUE;
         if ((merge_success = grid_checkPath_Ptr(gridPtr, pointVectorPtr)) == TRUE) 
           grid_addPath_Ptr(gridPtr, pointVectorPtr);
       }
