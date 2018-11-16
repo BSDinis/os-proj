@@ -77,6 +77,12 @@ coordinate_t* coordinate_alloc (long x, long y, long z);
  */
 void coordinate_free (coordinate_t* coordinatePtr);
 
+/* =============================================================================
+ * coordinate_swap
+ * =============================================================================
+ */
+void coordinate_swap (coordinate_t** a, coordinate_t** b);
+
 
 /* =============================================================================
  * coordinate_isEqual

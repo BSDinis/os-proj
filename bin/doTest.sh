@@ -7,6 +7,7 @@ par="../CircuitRouter-ParSolver/CircuitRouter-ParSolver"
 
 mem="no"
 prof="no"
+store_speedup="no"
 if [[ -v MEM ]]
 then
   mem="yes"
@@ -22,6 +23,13 @@ then
   echo
   make -C .. clean
   make -C .. PROF=yes
+  echo
+  echo
+  echo "Starting"
+elif [[ -v STORE ]]
+then
+  store_speedup="yes"
+  echo "Storing speedup at ../results"
   echo
   echo
   echo "Starting"
@@ -69,7 +77,7 @@ echo "==          DO TEST         =="
 echo "==  run tests on ParSolver  =="
 echo "== max number of threads: "$1" =="
 echo "== inpufile: "$2" =="
-echo "== speedup_file: "${new_speedup_file}" =="
+echo "== speedup_file: "${speedup_file}" =="
 
 
 echo "#n_threads,\ttime,\t\tspeedup" >> ${speedup_file}
@@ -85,7 +93,7 @@ if [[ $prof == "yes"  ]]
 then
   if [[ -a ../profiles/$2.prof ]]
   then
-    mv ../profiles/$2.prof ../profiles/$2.prof.old
+    mv ../profiles/$(basename $2).prof ../profiles/$(basename $2).prof.old
   fi
   echo "profiling to "../profiles/$2.prof
   gprof -p -q -r ../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver gmon.out > ../profiles/$2.prof
@@ -127,5 +135,12 @@ done
 
 # wrappup
 # This should be a move, but my hands were tied
-cp $speedup_file $new_speedup_file
-rm -f gmon.out
+if [[ $store_speedup == "yes" ]]
+then
+  cp $speedup_file $new_speedup_file
+fi
+
+if [[ $prof == "yes" ]]
+then
+  rm -f gmon.out
+fi

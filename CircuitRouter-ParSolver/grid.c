@@ -65,8 +65,8 @@
 
 
 const unsigned long CACHE_LINE_SIZE = 32UL;
-#define MAX_TRIES 2
-#define MAX_TIMEOUT 1<<7
+#define MAX_TRIES (1<<3)
+#define MAX_TIMEOUT (1<<6)
 
 
 /* =============================================================================
@@ -289,6 +289,18 @@ void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value){
   (*grid_getPointRef(gridPtr, x, y, z)) = value;
 }
 
+/* =============================================================================
+ * grid_distToEdge
+ * =============================================================================
+ */
+long grid_distToEdge (grid_t* gridPtr, long x, long y, long z)
+{
+  long a = (gridPtr->width - x > x) ? x : gridPtr->width - x;
+  long b = (gridPtr->height - y > y) ? x : gridPtr->height - y;
+  long c = (gridPtr->depth - z > z) ? z : gridPtr->depth - z;
+  return a + b + c;   
+}
+
 
 /* =============================================================================
  * grid_addPath
@@ -327,7 +339,7 @@ void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr){
  * compare two positions
  * =============================================================================
  */
-int compare_positions(const void * a, const void *b) 
+static int compare_positions(const void * a, const void *b) 
 {
   /* this works ou quite nicely, because of the way the grid is mapped to mem */
   /* this orders points (a.x, a.y, a.z) and (b.x, b.y, b.z) with the predicate
