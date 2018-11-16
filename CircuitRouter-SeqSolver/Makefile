@@ -8,13 +8,18 @@ INCLUDES := -I..
 VPATH := .:..
 
 # fdiagnostics... make the output colorized
-CFLAGS := -Wall -Werror -Wno-error=stringop-overflow= -std=gnu99 -fdiagnostics-color=always $(INCLUDES)
+CFLAGS := -Wall -std=gnu99 -fdiagnostics-color=always $(INCLUDES)
 LDFLAGS := -L -fdiagnostics-color=always $(INCLUDES) 
-LDLIBS := -lpthread -lm # link pthreads and math functs
+LDLIBS := -lm # link math functs
 LDFLAGS += -L.. -L../lib # search the lib dir for libraries
 LDLIBS += -lutils # link the utils library
 
 LIBUTILS = ../lib/libutils.a
+
+# if you run 'make PROF=yes' it will compile with information for profiler
+ifeq ($(strip $(PROF)), yes)
+  CFLAGS += -pg
+endif
 
 # if you run 'make DEBUG=no' it will compile without the debugger flag
 ifneq ($(strip $(DEBUG)), no)
@@ -25,6 +30,7 @@ endif
 ifneq ($(strip $(OPTIM)), no)
  CFLAGS += -O2
 endif
+
 
 # SOURCES is a list of all the files in the current dir with a .c extension
 # OBJECTS is a list created by taking SOURCES and replacing the .c extension with .o

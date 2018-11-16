@@ -53,6 +53,9 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include "pthread_wrappers.h"
+
 #include "coordinate.h"
 #include "grid.h"
 #include "lib/queue.h"
@@ -84,7 +87,6 @@ point_t MOVE_POSZ = { 0, 0, 1, 0, MOMENTUM_POSZ};
 point_t MOVE_NEGX = {-1, 0, 0, 0, MOMENTUM_NEGX};
 point_t MOVE_NEGY = { 0, -1, 0, 0, MOMENTUM_NEGY};
 point_t MOVE_NEGZ = { 0, 0, -1, 0, MOMENTUM_NEGZ};
-
 
 /* =============================================================================
  * router_alloc
@@ -158,6 +160,9 @@ static bool_t doExpansion (router_t* routerPtr, grid_t* myGridPtr, queue_t* queu
   long* dstGridPointPtr = grid_getPointRef(myGridPtr, dstPtr->x, dstPtr->y, dstPtr->z);
   bool_t isPathFound = FALSE;
 
+  long old_x = -1;
+  long old_y = -1;
+  long old_z = -1;
   while (!queue_isEmpty(queuePtr)) {
 
     long* gridPointPtr = (long*)queue_pop(queuePtr);
@@ -177,12 +182,16 @@ static bool_t doExpansion (router_t* routerPtr, grid_t* myGridPtr, queue_t* queu
      *
      * Potential Optimization: Only need to check 5 of these
      */
-    expandToNeighbor(myGridPtr, x+1, y,  z,  (value + xCost), queuePtr);
-    expandToNeighbor(myGridPtr, x-1, y,  z,  (value + xCost), queuePtr);
-    expandToNeighbor(myGridPtr, x,  y+1, z,  (value + yCost), queuePtr);
-    expandToNeighbor(myGridPtr, x,  y-1, z,  (value + yCost), queuePtr);
-    expandToNeighbor(myGridPtr, x,  y,  z+1, (value + zCost), queuePtr);
-    expandToNeighbor(myGridPtr, x,  y,  z-1, (value + zCost), queuePtr);
+    if(old_x - (x+1) != 0) expandToNeighbor(myGridPtr, x+1, y,  z,  (value + xCost), queuePtr);
+    if(old_x - (x-1) != 0) expandToNeighbor(myGridPtr, x-1, y,  z,  (value + xCost), queuePtr);
+    if(old_y - (y+1) != 0) expandToNeighbor(myGridPtr, x,  y+1, z,  (value + yCost), queuePtr);
+    if(old_y - (y-1) != 0) expandToNeighbor(myGridPtr, x,  y-1, z,  (value + yCost), queuePtr);
+    if(old_z - (z+1) != 0) expandToNeighbor(myGridPtr, x,  y,  z+1, (value + zCost), queuePtr);
+    if(old_z - (z-1) != 0) expandToNeighbor(myGridPtr, x,  y,  z-1, (value + zCost), queuePtr);
+
+    old_x = x;
+    old_y = y;
+    old_z = z;
 
   } /* iterate over work queue */
 
@@ -262,10 +271,7 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
      * Because of bend costs, none of the neighbors may appear to be closer.
      * In this case, pick a neighbor while ignoring momentum.
      */
-    if ((curr.x == next.x) &&
-      (curr.y == next.y) &&
-      (curr.z == next.z))
-    {
+    if ((curr.x == next.x) && (curr.y == next.y) && (curr.z == next.z)) {
       next.value = curr.value;
       traceToNeighbor(myGridPtr, &curr, &MOVE_POSX, FALSE, bendCost, &next);
       traceToNeighbor(myGridPtr, &curr, &MOVE_POSY, FALSE, bendCost, &next);
@@ -274,10 +280,7 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
       traceToNeighbor(myGridPtr, &curr, &MOVE_NEGY, FALSE, bendCost, &next);
       traceToNeighbor(myGridPtr, &curr, &MOVE_NEGZ, FALSE, bendCost, &next);
 
-      if ((curr.x == next.x) &&
-        (curr.y == next.y) &&
-        (curr.z == next.z))
-      {
+      if ((curr.x == next.x) && (curr.y == next.y) && (curr.z == next.z)) {
         vector_free(pointVectorPtr);
         return NULL; /* cannot find path */
       }
@@ -292,8 +295,7 @@ static vector_t* doTraceback (grid_t* gridPtr, grid_t* myGridPtr, coordinate_t* 
  * router_solve
  * =============================================================================
  */
-void router_solve (void* argPtr){
-
+void *router_solve (void* argPtr){
   router_solve_arg_t* routerArgPtr = (router_solve_arg_t*)argPtr;
   router_t* routerPtr = routerArgPtr->routerPtr;
   maze_t* mazePtr = routerArgPtr->mazePtr;
@@ -301,6 +303,9 @@ void router_solve (void* argPtr){
   assert(myPathVectorPtr);
 
   queue_t* workQueuePtr = mazePtr->workQueuePtr;
+  pthread_mutex_t* work_queue_mutex = routerArgPtr->workQueueMutex;
+  pthread_mutex_t* list_mutex = routerArgPtr->listMutex;
+
   grid_t* gridPtr = mazePtr->gridPtr;
   grid_t* myGridPtr = grid_alloc(gridPtr->width, gridPtr->height, gridPtr->depth);
   assert(myGridPtr);
@@ -314,11 +319,16 @@ void router_solve (void* argPtr){
   while (1) {
 
     pair_t* coordinatePairPtr;
-    if (queue_isEmpty(workQueuePtr)) {
+    
+    Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex);
+    bool_t empty= queue_isEmpty(workQueuePtr);
+    if (empty) {
       coordinatePairPtr = NULL;
     } else {
-      coordinatePairPtr = (pair_t*)queue_pop(workQueuePtr);
+      coordinatePairPtr = queue_pop(workQueuePtr);
     }
+    Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
+
     if (coordinatePairPtr == NULL) {
       break;
     }
@@ -326,43 +336,55 @@ void router_solve (void* argPtr){
     coordinate_t* srcPtr = coordinatePairPtr->firstPtr;
     coordinate_t* dstPtr = coordinatePairPtr->secondPtr;
 
-    pair_free(coordinatePairPtr);
 
     bool_t success = FALSE;
+    bool_t merge_success = TRUE;
     vector_t* pointVectorPtr = NULL;
 
-    grid_copy(myGridPtr, gridPtr); /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
-    if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr,
-             srcPtr, dstPtr)) {
+    /* create a copy of the grid, over which the expansion and trace back phases will be executed. */
+    grid_copy(myGridPtr, gridPtr);
+    if (doExpansion(routerPtr, myGridPtr, myExpansionQueuePtr, srcPtr, dstPtr)) {
       pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
       if (pointVectorPtr) {
-        grid_addPath_Ptr(gridPtr, pointVectorPtr);
-
-        success = TRUE;
+        merge_success = FALSE;
+        success = FALSE;
+        if ((merge_success = grid_checkPath_Ptr(gridPtr, pointVectorPtr)) == TRUE) 
+          grid_addPath_Ptr(gridPtr, pointVectorPtr);
       }
     }
+    
 
     if (success) {
-      bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
-      assert(status);
+      if (merge_success) {
+        bool_t status = vector_pushBack(myPathVectorPtr,(void*)pointVectorPtr);
+        assert(status);
+        pair_free(coordinatePairPtr);
+      }
+      else {
+        // failed, retry
+        Pthread_mutex_lock(abort_exec, "router_solve: failed to lock work queue", work_queue_mutex); 
+        queue_push(workQueuePtr, (void*)coordinatePairPtr);
+        Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock work queue", work_queue_mutex);
+        if (pointVectorPtr) vector_free(pointVectorPtr);
+      }
     }
-
+    
   }
 
   /*
    * Add my paths to global list
    */
   list_t* pathVectorListPtr = routerArgPtr->pathVectorListPtr;
+  Pthread_mutex_lock(abort_exec, "router_solve: failed to lock list", list_mutex);
   list_insert(pathVectorListPtr, (void*)myPathVectorPtr);
+  Pthread_mutex_unlock(abort_exec, "router_solve: failed to unlock list", list_mutex);
 
   grid_free(myGridPtr);
   queue_free(myExpansionQueuePtr);
+  return NULL;
 }
-
 
 /* =============================================================================
  *
  * End of router.c
- *
- * =============================================================================
- */
+ * =============================================================================*/

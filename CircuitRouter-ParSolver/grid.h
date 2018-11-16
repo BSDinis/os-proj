@@ -59,6 +59,7 @@
 #include "lib/vector.h"
 
 #include <stdio.h>
+#include <pthread.h>
 
 typedef struct grid {
   long width;
@@ -66,6 +67,9 @@ typedef struct grid {
   long depth;
   long* points;
   long* points_unaligned;
+  pthread_mutex_t *locks_unaligned;
+  pthread_mutex_t *locks;
+
 } grid_t;
 
 enum {
@@ -143,6 +147,13 @@ bool_t grid_isPointFull (grid_t* gridPtr, long x, long y, long z);
  */
 void grid_setPoint (grid_t* gridPtr, long x, long y, long z, long value);
 
+/* =============================================================================
+ * grid_distToEdge
+ * =============================================================================
+ */
+long grid_distToEdge (grid_t* gridPtr, long x, long y, long z);
+
+
 
 /* =============================================================================
  * grid_addPath
@@ -157,6 +168,12 @@ void grid_addPath (grid_t* gridPtr, vector_t* pointVectorPtr);
  */
 void grid_addPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr);
 
+
+/* =============================================================================
+ * grid_checkPath_Ptr
+ * =============================================================================
+ */
+bool_t grid_checkPath_Ptr (grid_t* gridPtr, vector_t* pointVectorPtr);
 
 /* =============================================================================
  * grid_print (derived from grid print to file)

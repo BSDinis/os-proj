@@ -204,8 +204,20 @@ vector_clear (vector_t* vectorPtr)
 void
 vector_sort (vector_t* vectorPtr, int (*compare) (const void*, const void*))
 {
-  qsort((void*)vectorPtr->elements, vectorPtr->size, sizeof(void**), compare);
+  qsort((void*)vectorPtr->elements, vectorPtr->size, sizeof(void*), compare);
 }
+
+/* =============================================================================
+ * vector_rangeSort
+ * =============================================================================
+ */
+void
+vector_rangeSort (vector_t* vectorPtr, long firstIndex, long lastIndex, int (*compare) (const void*, const void*))
+{
+  if (firstIndex < lastIndex) 
+    qsort((void*)vectorPtr->elements + firstIndex, lastIndex - firstIndex, sizeof(void **), compare);
+}
+
 
 
 /* =============================================================================

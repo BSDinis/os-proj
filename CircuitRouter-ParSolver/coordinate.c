@@ -85,6 +85,16 @@ void coordinate_free (coordinate_t* coordinatePtr){
   free(coordinatePtr);
 }
 
+/* =============================================================================
+ * coordinate_swap
+ * =============================================================================
+ */
+void coordinate_swap (coordinate_t** a, coordinate_t** b)
+{
+  coordinate_t *tmp = *a;
+  *b = *a;
+  *a = tmp;
+}
 
 /* =============================================================================
  * coordinate_isEqual

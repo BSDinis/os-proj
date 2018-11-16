@@ -5,6 +5,11 @@ from datetime import datetime
 
 random.seed(datetime.now())
 
+BASE_DIR = "../CircuitRouter-SeqSolver/"
+BASENAME_CMD = "CircuitRouter-SeqSolver"
+
+CMD = BASE_DIR + BASENAME_CMD
+
 def genRand():
   legalOptions = ['b', 'x', 'y', 'z', 'h']
   filename = [
@@ -42,10 +47,10 @@ def genRand():
 
 def run():
   for i in range(10):
-    cmd = './CircuitRouter-ParSolver'+genRand()
+    cmd = CMD+genRand()
     print('\n' + cmd + '\n\n\n\n')
   os.system(cmd)
 
-cmd = 'valgrind ./CircuitRouter-ParSolver'+genRand()
+cmd = 'valgrind '+CMD+genRand()
 print(cmd)
 os.system(cmd)
