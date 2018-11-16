@@ -1,9 +1,15 @@
 #!/usr/bin/zsh
 
-out=../README.txt
-if [[ -a $out ]]
+out1=../README.txt
+if [[ -a $out1 ]]
 then
-  rm -f $out;
+  rm -f $out1;
+fi
+
+out2=../README.md
+if [[ -a $out2 ]]
+then
+  rm -f $out2;
 fi
 
 
@@ -54,5 +60,6 @@ function print_everything() {
 
 
 
-print_everything > $out
+print_everything > $out1
+print_everything > $out2
 print_everything 

@@ -10,6 +10,7 @@ test_hashtable
 *.txt
 !README.txt
 *.md
+!README.md
 *.res
 *.old
 vgcore*
