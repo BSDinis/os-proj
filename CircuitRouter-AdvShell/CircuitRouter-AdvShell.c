@@ -31,6 +31,7 @@
 #include "lib/hashtable.h"	
 
 #define SOLVER "../CircuitRouter-ParSolver/CircuitRouter-ParSolver"
+#define DEFAULT_PARALELISM "8"
 
 // when removing an active child (by waiting) the wait sys call may fail
 // this defines how many times it is retried
@@ -234,7 +235,7 @@ static void run_solver(const char *inputfile)
   pid_t cid = fork();
   if (cid == 0) {
     // child
-    if (execl(SOLVER, SOLVER, inputfile, (char *) NULL) == -1) {
+    if (execl(SOLVER, SOLVER, "-t", DEFAULT_PARALELISM, inputfile, (char *) NULL) == -1) {
       perror("FATAL ERROR: run_solver: execl");
       exit(-2);
     }
