@@ -8,9 +8,6 @@ heavy = [
     'random-x512-y512-z7-n512.txt'
 ]
 
-
-
-
 input_list = [
     'random-x128-y128-z3-n128.txt',
     'random-x128-y128-z3-n64.txt',
@@ -40,15 +37,12 @@ bad_inputs = [
 ]
 
 
-l = input_list
-
-for a in sys.argv:
-    if a == 'bad':
-        l += bad_inputs
+l = input_list + 2* bad_inputs;
 
 l = random.sample(l, len(l))
 
-for _ in l:
-    print(_)
+for e in l:
+    print(e)
+    print("\033[1m" + e + "\033[0m", file = sys.stderr)
 
 print("exit")
