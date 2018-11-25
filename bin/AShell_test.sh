@@ -8,8 +8,9 @@ then
 fi
 
 ./gen_shell_inputs.py > .a.tmp
-valgrind ../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
+../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
 
+valgrind ../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
 echo "" > .a.tmp
 valgrind ../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
 
