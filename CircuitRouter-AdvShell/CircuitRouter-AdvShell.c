@@ -26,6 +26,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <signal.h>
+#include <time.h>
+
 #include "command.h"
 #include "lib/vector.h"
 #include "lib/hashtable.h"	
@@ -43,7 +46,9 @@
  */
 typedef struct {
   pid_t pid;
-  int status_code;
+  long sec;
+  int status;
+  bool ok;
 } child_ctx_t;
 
 int64_t global_max_children;
@@ -52,15 +57,15 @@ vector_t *global_zombies; // finished processes
 hashtable_t global_active; // active processes (limited by global_max_children)		￼
 
 /* =============================================================================	
- * compare pid pointers	
+ * compare child ctx pointers	
  * =============================================================================	
  */	
-static int compare_pid_t(const void *a, const void *b)	
+static int compare_ctx_t(const void *a, const void *b)	
 {	
   if (a == NULL || b == NULL) return 1;	
 
-  const pid_t * first = (const pid_t *) a;	
-  const pid_t * second = (const pid_t *) b;	
+  const pid_t * first = &((const child_ctx_t *) a)->pid;	
+  const pid_t * second = &((const child_ctx_t *) b)->pid;	
   return (*first == *second) ? 1 : 0;	
 }
 
@@ -72,7 +77,7 @@ static ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
 {
   if (cap <= 0 || ptr == NULL) return 1;
 
-  const pid_t *pid = (const pid_t *) ptr;
+  const pid_t *pid = &((const child_ctx_t *)ptr)->pid;
   return *pid % cap;
 }
 
@@ -83,7 +88,7 @@ static ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
 static ssize_t hash_pid_2(const ssize_t cap, const void * ptr)
 {
   if (cap <= 0 || ptr == NULL) return 1;
-   const pid_t *pid = (const pid_t *) ptr;
+  const pid_t *pid = &((const child_ctx_t *)ptr)->pid;
   return *pid % 7 + 1;
 }
 
@@ -149,13 +154,16 @@ static void add_zombie(child_ctx_t * ctx)
  */
 static void add_active(const pid_t pid)
 {
-  pid_t *ptr = malloc(sizeof(pid_t));
+  child_ctx_t *ptr = malloc(sizeof(child_ctx_t));
   if (ptr == NULL) {
     perror("add_active: malloc");
     exit(-2);
   }
 
-  *ptr = pid;
+  ptr->pid = pid;
+  ptr->sec = 0;
+  ptr->status = -1;
+  ptr->ok = false;
   if (hashtable_add(global_active, (void *) ptr) == -1) {
     fprintf(stderr, "add_active: hashtable_add returned error.\nAborting\n");
     abort();
@@ -169,42 +177,34 @@ static void add_active(const pid_t pid)
 static void rem_active()
 {                
   pid_t pid;
-  int status;
   int counter = 0; // we don't want to retry wait indefinetly
   int successful_wait = 0; // flag to know when to exit the cycle
+  int status;
 
   do {
     pid = wait(&status);
     counter++;
-    int _errno = errno; // push errno
     errno = 0;
     if (pid != -1) {
       successful_wait = 1;
     }
     else if (errno == ECHILD) {
-      successful_wait = 1;
       fprintf(stderr, "rem_active: called wait on childless process.\nAborting\n");
-      abort();
+      exit(-1);
     }
     else if (errno == EINTR) {
       perror("rem_active");
       fprintf(stderr, "Retrying (%d)\n", counter);
     }
-    errno = _errno; // pop errno
   } while (!successful_wait && counter <= MAX_WAIT_RETRIES);
 
-  child_ctx_t *finished = malloc(sizeof(child_ctx_t));
+  child_ctx_t *finished = hashtable_rem(global_active, (void *)&pid);
   if (finished == NULL) {
-    perror("rem_active: malloc");
+    perror("rem_active: hashtable lookup failed");
     exit(-2);
   }
-  
-  finished->status_code = status;
-  finished->pid = pid;
-  void * ptr = hashtable_rem(global_active, (void *) &(finished->pid));		
-  if (ptr != NULL)		
-    free(ptr);
-
+  finished->status = WEXITSTATUS(status);
+  finished->ok = WIFEXITED(status);
   add_zombie(finished);
 }
 
@@ -264,8 +264,7 @@ static void exit_shell()
     if (data == NULL) continue;
 
     child_ctx_t * ctx = (child_ctx_t * ) data;
-    int success = WIFEXITED(ctx->status_code) && WEXITSTATUS(ctx->status_code) == 0;
-    fprintf(stdout, "CHILD EXITED (PID=%d; return %sOK)\n", ctx->pid, (success) ? "" : "N"); // FIXME times
+    fprintf(stdout, "CHILD EXITED (PID=%d; return %sOK; %ld s)\n", ctx->pid, (ctx->ok) ? "" : "N", ctx->sec); // FIXME times
     free(ctx);
   }
   
@@ -314,9 +313,7 @@ int main(int argc, char** argv){
   }
 
   ssize_t init_capacity = 0;
-  if (global_max_children != -1)
-    init_capacity = global_max_children * 2;
-    /* here we have a performance - memory tradeoff,
+  /* here we have a performance - memory tradeoff,
      * where time performance is favoured
      *
      * if we define the initial capacity as max_children,
@@ -326,13 +323,18 @@ int main(int argc, char** argv){
      *
      * since we know we will never insert more than global_max_children,
      * by doubling the initial capacity, we avoid that operation
-     * entirely */
+     * entirely
+     */
+  if (global_max_children != -1)
+    init_capacity = global_max_children * 2;
   else
     init_capacity = 1 << 8;
+
    global_active = hashtable_(init_capacity,
       hash_pid_1,
       hash_pid_2,
-      compare_pid_t);
+      compare_ctx_t);
+
    if (global_active == NULL) {
     fprintf(stderr, "failed to initialize active list. aborting\n");
     vector_free(global_zombies);
