@@ -47,6 +47,7 @@
 typedef struct {
   pid_t pid;
   long sec;
+  struct timespec begin;
   int status;
   bool ok;
 } child_ctx_t;
@@ -160,6 +161,10 @@ static void add_active(const pid_t pid)
     exit(-2);
   }
 
+  if (clock_gettime(CLOCK_REALTIME, &ptr->begin) == -1) {
+    perror("add_active: clock_gettime");
+    exit(-1);
+  }
   ptr->pid = pid;
   ptr->sec = 0;
   ptr->status = -1;
@@ -170,42 +175,51 @@ static void add_active(const pid_t pid)
   }
 }
 
+static long get_secs(const struct timespec *a, const struct timespec *b)
+{
+  long sec = a->tv_sec - b->tv_sec;
+  long nsec = a->tv_nsec - b->tv_nsec;
+  if (nsec > 500000000) sec++;
+  else if (nsec < -500000000) sec--;
+  return sec;
+}
+
+
 /* =================================================================
- * rem_active
+ * rem_active: treat SIGCHLD signal
  * =================================================================
  */
-static void rem_active()
+static void rem_active(int signo, siginfo_t *info, void *uctx)
 {                
+  if (signo != SIGCHLD) return;
+  
   pid_t pid;
-  int counter = 0; // we don't want to retry wait indefinetly
-  int successful_wait = 0; // flag to know when to exit the cycle
-  int status;
+  int status = 0;
 
-  do {
-    pid = wait(&status);
-    counter++;
-    errno = 0;
-    if (pid != -1) {
-      successful_wait = 1;
-    }
-    else if (errno == ECHILD) {
-      fprintf(stderr, "rem_active: called wait on childless process.\nAborting\n");
+  // waitpid allows for WNOHANG; this way concorrent 
+  // children exiting get caught
+  while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+    if (!pid) continue;
+    if (pid == -1) {
+      perror("rem_active: waitpid");
       exit(-1);
     }
-    else if (errno == EINTR) {
-      perror("rem_active");
-      fprintf(stderr, "Retrying (%d)\n", counter);
+    
+    struct timespec end;
+    if (clock_gettime(CLOCK_REALTIME, &end) == -1) {
+      exit(-1); // FIXME - no error message - reentrancy
     }
-  } while (!successful_wait && counter <= MAX_WAIT_RETRIES);
-
-  child_ctx_t *finished = hashtable_rem(global_active, (void *)&pid);
-  if (finished == NULL) {
-    perror("rem_active: hashtable lookup failed");
-    exit(-2);
+    
+    child_ctx_t *finished = hashtable_rem(global_active, (void *)&pid);
+    if (finished == NULL) {
+      perror("rem_active: hashtable lookup failed");
+      exit(-2); // this may need to be removed if not all children are solvers
+    }
+    finished->status = WEXITSTATUS(status);
+    finished->ok = WIFEXITED(status) && finished->status == 0;
+    finished->sec = get_secs(&end, &finished->begin);
+    add_zombie(finished);
   }
-  finished->status = WEXITSTATUS(status);
-  finished->ok = WIFEXITED(status);
-  add_zombie(finished);
 }
 
 
@@ -227,10 +241,8 @@ static void print_command_help()
   */
 static void run_solver(const char *inputfile)
 {
-  if (global_max_children != -1 
-      && hashtable_size(global_active) == global_max_children) {
-    rem_active();
-  }
+  if (global_max_children != -1 && hashtable_size(global_active) == global_max_children) 
+    pause();
   
   pid_t cid = fork();
   if (cid == 0) {
@@ -254,10 +266,9 @@ static void run_solver(const char *inputfile)
   */
 static void exit_shell()
 {
-  while (hashtable_size(global_active) != 0) {
-    rem_active();
-  }
-  
+  while (hashtable_size(global_active) != 0)
+    pause();
+
   ssize_t size = vector_getSize(global_zombies);
   for (ssize_t i = 0; i < size; i++) {
     void * data = vector_at(global_zombies, i);
@@ -291,12 +302,27 @@ static void execute_command(const command_t cmd)
   }
 }
 
+void install_handler(void (*handler)(int, siginfo_t *, void *), int signo)
+{
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, signo);
+
+  struct sigaction action;
+  action.sa_sigaction = handler;
+  action.sa_mask = mask;
+  action.sa_flags = SA_NOCLDSTOP; // nevermind stopped children
+
+  sigaction(signo, &action, NULL);
+}
+
 
 /* =============================================================================
   * main
   * =============================================================================
   */
 int main(int argc, char** argv){
+  install_handler(rem_active, SIGCHLD);
   // search for solver
   if (access(SOLVER, R_OK ^ X_OK) == -1) {
     fprintf(stderr, "Could not find solver. Exiting\n");
