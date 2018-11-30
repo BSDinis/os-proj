@@ -4,6 +4,9 @@ ash:
 	make -C CircuitRouter-AdvShell 
 
 
+clnt: 
+	make -C CircuitRouter-Client
+
 sish: 
 	make -C CircuitRouter-SimpleShell 
 
@@ -18,3 +21,4 @@ clean:
 	make -C CircuitRouter-SimpleShell $@
 	make -C CircuitRouter-ParSolver $@
 	make -C CircuitRouter-SeqSolver $@
+	make -C CircuitRouter-Client $@
