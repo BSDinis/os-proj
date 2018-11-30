@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <stdbool.h>
 
 #include <sys/types.h>
@@ -36,10 +37,6 @@
 #define SOLVER "../CircuitRouter-ParSolver/CircuitRouter-ParSolver"
 #define DEFAULT_PARALELISM "8"
 
-// when removing an active child (by waiting) the wait sys call may fail
-// this defines how many times it is retried
-#define MAX_WAIT_RETRIES 5
-
 /* 
  * child_ctx_t
  * hold relevant information related to a child process
@@ -49,49 +46,11 @@ typedef struct {
   long sec;
   struct timespec begin;
   int status;
-  bool ok;
 } child_ctx_t;
 
 int64_t global_max_children;
-
-vector_t *global_zombies; // finished processes
-hashtable_t global_active; // active processes (limited by global_max_children)		￼
-
-/* =============================================================================	
- * compare child ctx pointers	
- * =============================================================================	
- */	
-static int compare_ctx_t(const void *a, const void *b)	
-{	
-  if (a == NULL || b == NULL) return 1;	
-
-  const pid_t * first = &((const child_ctx_t *) a)->pid;	
-  const pid_t * second = &((const child_ctx_t *) b)->pid;	
-  return (*first == *second) ? 1 : 0;	
-}
-
-/*=============================================================================
- * hash of a pid pointer
- * =============================================================================
- */
-static ssize_t hash_pid_1(const ssize_t cap, const void * ptr)
-{
-  if (cap <= 0 || ptr == NULL) return 1;
-
-  const pid_t *pid = &((const child_ctx_t *)ptr)->pid;
-  return *pid % cap;
-}
-
-/* =============================================================================
- * 2nd hash of a pid pointer
- * =============================================================================
- */
-static ssize_t hash_pid_2(const ssize_t cap, const void * ptr)
-{
-  if (cap <= 0 || ptr == NULL) return 1;
-  const pid_t *pid = &((const child_ctx_t *)ptr)->pid;
-  return *pid % 7 + 1;
-}
+volatile sig_atomic_t global_active;
+vector_t *global_proc; // processes
 
 /* =============================================================================
   * displayUsage
@@ -109,6 +68,7 @@ static void display_usage(const char * program_name){
 static void setDefaults ()
 {
   global_max_children = -1;
+  global_active = 0;
 }
 
 /* =============================================================================
@@ -120,7 +80,6 @@ static void parseArgs (const long argc, char* const argv[]){
     display_usage(argv[0]);
   }
   else if (argc == 2) {
-    int _errno = errno; // push errno
     errno = 0;
     global_max_children = strtoll(argv[1], NULL, 10);
     if (errno != 0) {
@@ -130,7 +89,6 @@ static void parseArgs (const long argc, char* const argv[]){
     else if (global_max_children <= 0) {
       display_usage(argv[0]);
     }
-    errno = _errno; // pop errno
   }
   else {
     setDefaults();
@@ -138,41 +96,29 @@ static void parseArgs (const long argc, char* const argv[]){
 }
 
 /* =================================================================
- * add_zombie
+ * add_process
  * =================================================================
  */
-static void add_zombie(child_ctx_t * ctx)
-{
-  if (vector_pushBack(global_zombies, (void *) ctx) == FALSE)  {
-    fprintf(stderr, "add_zombie: vector_pushBack returned error\n. Aborting.");
-    abort();
-  }
-}
-
-/* =================================================================
- * add_active
- * =================================================================
- */
-static void add_active(const pid_t pid)
+static void add_process(const pid_t pid)
 {
   child_ctx_t *ptr = malloc(sizeof(child_ctx_t));
   if (ptr == NULL) {
-    perror("add_active: malloc");
+    perror("add_process: malloc");
     exit(-2);
   }
 
   if (clock_gettime(CLOCK_REALTIME, &ptr->begin) == -1) {
-    perror("add_active: clock_gettime");
+    perror("add_process: clock_gettime");
     exit(-1);
   }
   ptr->pid = pid;
-  ptr->sec = 0;
+  ptr->sec = -1;
   ptr->status = -1;
-  ptr->ok = false;
-  if (hashtable_add(global_active, (void *) ptr) == -1) {
-    fprintf(stderr, "add_active: hashtable_add returned error.\nAborting\n");
+  if (vector_pushBack(global_proc, (void *) ptr) == FALSE)  {
+    fprintf(stderr, "add_process: vector_pushBack returned error\n. Aborting.");
     abort();
   }
+  global_active++;
 }
 
 static long get_secs(const struct timespec *a, const struct timespec *b)
@@ -182,6 +128,19 @@ static long get_secs(const struct timespec *a, const struct timespec *b)
   if (nsec > 500000000) sec++;
   else if (nsec < -500000000) sec--;
   return sec;
+}
+
+
+static child_ctx_t * find_ctx(vector_t *vec_ptr, pid_t pid)
+{      
+  if (vec_ptr == NULL) return NULL;
+  long size = vector_getSize(vec_ptr);
+  for (long i = 0; i < size; i++) { 
+    child_ctx_t * ptr = (child_ctx_t *) vector_at(vec_ptr, i);
+    if (ptr->pid == pid) return ptr;
+  }
+
+  return NULL;
 }
 
 
@@ -207,18 +166,20 @@ static void rem_active(int signo, siginfo_t *info, void *uctx)
     
     struct timespec end;
     if (clock_gettime(CLOCK_REALTIME, &end) == -1) {
-      exit(-1); // FIXME - no error message - reentrancy
+      write(2, "SIGCHLD handler: clock_gettime failed\n", strlen("SIGCHLD handler: clock_gettime failed\n")+1);
+      exit(-1); 
     }
     
-    child_ctx_t *finished = hashtable_rem(global_active, (void *)&pid); // FIXME - non-reentering
+    
+    child_ctx_t *finished = find_ctx(global_proc, pid);
     if (finished == NULL) {
-      perror("rem_active: hashtable lookup failed");
+      write(2, "rem_active: lookup failed\n", strlen("rem_active: lookup failed\n")+1);
       exit(-2); // this may need to be removed if not all children are solvers
     }
-    finished->status = WEXITSTATUS(status);
-    finished->ok = WIFEXITED(status) && finished->status == 0;
+
+    finished->status = status;
     finished->sec = get_secs(&end, &finished->begin);
-    add_zombie(finished);
+    global_active--;
   }
 }
 
@@ -241,7 +202,7 @@ static void print_command_help()
   */
 static void run_solver(const char *inputfile)
 {
-  if (global_max_children != -1 && hashtable_size(global_active) == global_max_children) 
+  if (global_max_children != -1 && global_active == global_max_children) 
     pause();
   
   pid_t cid = fork();
@@ -257,7 +218,7 @@ static void run_solver(const char *inputfile)
     perror("run_solver: fork");
   }
   
-  add_active(cid);
+  add_process(cid);
 }
 
 /* =============================================================================
@@ -266,16 +227,20 @@ static void run_solver(const char *inputfile)
   */
 static void exit_shell()
 {
-  while (hashtable_size(global_active) != 0)
+  while (global_active != 0)
     pause();
 
-  ssize_t size = vector_getSize(global_zombies);
+  ssize_t size = vector_getSize(global_proc);
   for (ssize_t i = 0; i < size; i++) {
-    void * data = vector_at(global_zombies, i);
+    void * data = vector_at(global_proc, i);
     if (data == NULL) continue;
 
     child_ctx_t * ctx = (child_ctx_t * ) data;
-    fprintf(stdout, "CHILD EXITED (PID=%d; return %sOK; %ld s)\n", ctx->pid, (ctx->ok) ? "" : "N", ctx->sec); // FIXME times
+    fprintf(stdout, "CHILD EXITED (PID=%d; return %sOK; %ld s)\n", 
+        ctx->pid, 
+        (WIFEXITED(ctx->status) && WEXITSTATUS(ctx->status) == 0) ? "" : "N",
+        ctx->sec);
+
     free(ctx);
   }
   
@@ -332,49 +297,19 @@ int main(int argc, char** argv){
   /* Initialization */
   parseArgs(argc, (char** const)argv);
 
-  global_zombies = vector_alloc(global_max_children);
-  if (global_zombies == NULL) {
-    fprintf(stderr, "failed to initialize zombie list. aborting\n");
+  global_proc = vector_alloc(global_max_children);
+  if (global_proc == NULL) {
+    fprintf(stderr, "failed to initialize proc list. aborting\n");
     return -1;
   }
 
-  ssize_t init_capacity = 0;
-  /* here we have a performance - memory tradeoff,
-     * where time performance is favoured
-     *
-     * if we define the initial capacity as max_children,
-     * once max_children / 2 elements are added, the hashtable is
-     * reallocated and all the elements are inserted again
-     * (which is quite expensive)
-     *
-     * since we know we will never insert more than global_max_children,
-     * by doubling the initial capacity, we avoid that operation
-     * entirely
-     */
-  if (global_max_children != -1)
-    init_capacity = global_max_children * 2;
-  else
-    init_capacity = 1 << 8;
-
-   global_active = hashtable_(init_capacity,
-      hash_pid_1,
-      hash_pid_2,
-      compare_ctx_t);
-
-   if (global_active == NULL) {
-    fprintf(stderr, "failed to initialize active list. aborting\n");
-    vector_free(global_zombies);
-    return -1;
-  }
-  
   command_t cmd;
   do {
     cmd = get_command();
     execute_command(cmd);
   } while (cmd.code != exit_code);
 
-  free_hashtable(global_active);
-  vector_free(global_zombies);
+  vector_free(global_proc);
   exit(0);
 }
 
