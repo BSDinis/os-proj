@@ -67,10 +67,15 @@ int main(int argc, char** argv){
   char input_pipe_name[PIPE_NAME_SZ];
   snprintf(input_pipe_name, PIPE_NAME_SZ - 1,  "/tmp/CircuitRouter-Client.pipe.%x", getpid());
   input_pipe_name[PIPE_NAME_SZ - 1] = '\0';
-  mkfifo(input_pipe_name, 0666);
 
+  if (mkfifo(input_pipe_name, 0666) == -1) {
+    perror("mkfifo");
+    exit(EXIT_FAILURE);
+  }
   FILE * output_pipe = fopen(pipe_pathname, "w+");
+  assert(output_pipe);
   FILE * input_pipe = fopen(input_pipe_name, "w+");
+  assert(input_pipe);
 
   ssize_t cmd_buffersz = strlen(input_pipe_name) + BUFFER_SIZE + 3;
   char cmd_buffer[cmd_buffersz];
@@ -82,16 +87,26 @@ int main(int argc, char** argv){
     buffer[BUFFER_SIZE - 1] = '\0';
 
     snprintf(cmd_buffer, cmd_buffersz, "%s %s", input_pipe_name, buffer);
-    fputs(cmd_buffer, output_pipe);
-    fflush(output_pipe); 
+    if (fputs(cmd_buffer, output_pipe) == EOF) {
+      fprintf(stderr, "Could not write to pipe. Aborting\n");
+      break;
+    }
+    if (fflush(output_pipe) == -1) {
+      perror("fflush");
+      break;
+    }
     
-    fgets(buffer, BUFFER_SIZE - 1, input_pipe);
+    if (fgets(buffer, BUFFER_SIZE - 1, input_pipe) == NULL) {
+      fprintf(stderr, "failed to read\n");
+      break;
+    }
     buffer[BUFFER_SIZE - 1] = '\0';
     fputs(buffer, stdout);
   }
 
   fclose(output_pipe);
   fclose(input_pipe);
+  unlink(input_pipe_name);
   exit(0);
 }
 
