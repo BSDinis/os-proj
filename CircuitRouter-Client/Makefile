@@ -38,9 +38,9 @@ endif
 # TARGETS is the target executable
 SOURCES = $(wildcard *.c)
 OBJECTS = $(SOURCES:.c=.o)
-TARGETS = CircuitRouter-AdvShell
-SOLVERDIR = ../CircuitRouter-ParSolver
-SOLVER = $(SOLVERDIR)/CircuitRouter-ParSolver
+TARGETS = CircuitRouter-Client
+SOLVERDIR = ../CircuitRouter-AdvShell
+SOLVER = $(SOLVERDIR)/CircuitRouter-AdvShell
 
 LIBUTILS = ../lib/libutils.a
 
@@ -48,8 +48,7 @@ LIBUTILS = ../lib/libutils.a
 # creates rules based on their dependencies
 #
 # utils is a target that recompiles the library
-all: depend CircuitRouter-AdvShell  $(SOLVER) 
-
+all:  depend $(LIBUTILS) $(SOLVER) $(TARGETS) 
 
 $(SOLVER):
 	@make -C $(SOLVERDIR)
@@ -59,10 +58,9 @@ $(SOLVER):
 $(LIBUTILS):
 	@make -C ../lib
 
-CircuitRouter-AdvShell: $(LIBUTILS) $(OBJECTS) 
+$(TARGETS): $(OBJECTS) 
 
 -include autodep
-
 
 # PHONY means it always runs 
 # (doesn't check if the dependencies didn't change)
@@ -71,7 +69,7 @@ CircuitRouter-AdvShell: $(LIBUTILS) $(OBJECTS)
 # the -f flag supresses outpu if there are no files
 .PHONY: clean
 clean:
-	@rm -f $(OBJECTS) CircuitRouter-AdvShell autodep vgcore*
+	@rm -f $(OBJECTS) $(TARGETS) autodep vgcore*
 	@make clean -C ../lib
 	@make clean -C $(SOLVERDIR)
 

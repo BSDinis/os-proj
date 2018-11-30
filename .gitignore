@@ -4,6 +4,7 @@ CircuitRouter-SeqSolver/CircuitRouter-SeqSolver
 CircuitRouter-ParSolver/CircuitRouter-ParSolver
 CircuitRouter-SimpleShell/CircuitRouter-SimpleShell
 CircuitRouter-AdvShell/CircuitRouter-AdvShell
+CircuitRouter-Client/CircuitRouter-Client
 test_simple_list
 test_hashtable
 *.a
@@ -18,3 +19,5 @@ vgcore*
 *.zip
 *speedups.csv
 profiles
+test
+

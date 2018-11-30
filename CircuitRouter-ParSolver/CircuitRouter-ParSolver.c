@@ -84,6 +84,7 @@ enum param_defaults {
 
 bool_t global_doPrint = TRUE;
 char* global_inputFile = NULL;
+char* global_outputFile = NULL;
 long global_params[256]; /* 256 = ascii limit */
 
 
@@ -153,9 +154,12 @@ static void parseArgs (long argc, char* const argv[]){
   
   
   for (i = optind; i < argc && !opterr; i++) {
-    if (!global_inputFile) {
-      if (access(argv[i], R_OK) == -1) {
-        fprintf(stderr, "Non-existing file: %s\n", argv[i]);
+    if (!global_inputFile || !global_outputFile) {
+      if (strstr(argv[i], ".pipe") != NULL) { 
+        global_outputFile = argv[i];
+      }
+      else if (access(argv[i], R_OK ^ W_OK) == -1) {
+        fprintf(stderr, "Can't access file: %s\n", argv[i]);
         opterr++;
         i = argc; // break
       }
@@ -171,7 +175,15 @@ static void parseArgs (long argc, char* const argv[]){
 
 
   if (opterr || !global_inputFile) {
-    displayUsage(argv[0]);
+    if (global_outputFile) {      
+      FILE *os = fopen(global_outputFile, "w+");
+      fputs("Illegal arguments\n", os);
+      fflush(os);
+      fclose(os);
+    }
+    else {       
+      displayUsage(argv[0]);          
+    }
   }
 }
 
@@ -315,6 +327,16 @@ int main(int argc, char** argv){
   }
   list_free(pathVectorListPtr);
 
+
+  if (global_outputFile != NULL) {      
+    FILE *os = fopen(global_outputFile, "w+");
+    fputs("Circuit solved\n", os);
+    fflush(os);
+    fclose(os);
+  }
+  else {      
+    fputs("Circuit solved\n", stdout);
+  }
 
   return 0;
 }

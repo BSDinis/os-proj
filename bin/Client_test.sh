@@ -12,7 +12,8 @@ fi
 echo "====================================="
 echo "=========== Regular Tests ==========="
 echo "====================================="
-../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
+../CircuitRouter-AdvShell/CircuitRouter-AdvShell &;
+../CircuitRouter-Client/CircuitRouter-Client ../CircuitRouter-AdvShell/CircuitRouter-AdvShell.pipe < .a.tmp
 
 : '
 echo "====================================="
