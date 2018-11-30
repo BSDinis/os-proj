@@ -48,7 +48,8 @@ LIBUTILS = ../lib/libutils.a
 # creates rules based on their dependencies
 #
 # utils is a target that recompiles the library
-all: depend $(LIBUTILS) $(SOLVER) $(TARGETS) 
+all: depend CircuitRouter-AdvShell  $(SOLVER) 
+
 
 $(SOLVER):
 	@make -C $(SOLVERDIR)
@@ -58,9 +59,10 @@ $(SOLVER):
 $(LIBUTILS):
 	@make -C ../lib
 
-$(TARGETS): $(OBJECTS) 
+CircuitRouter-AdvShell: $(LIBUTILS) $(OBJECTS) 
 
 -include autodep
+
 
 # PHONY means it always runs 
 # (doesn't check if the dependencies didn't change)
@@ -69,7 +71,7 @@ $(TARGETS): $(OBJECTS)
 # the -f flag supresses outpu if there are no files
 .PHONY: clean
 clean:
-	@rm -f $(OBJECTS) $(TARGETS) autodep vgcore*
+	@rm -f $(OBJECTS) CircuitRouter-AdvShell autodep vgcore*
 	@make clean -C ../lib
 	@make clean -C $(SOLVERDIR)
 

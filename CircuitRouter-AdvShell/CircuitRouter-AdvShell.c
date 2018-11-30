@@ -24,9 +24,12 @@
 #include <stdbool.h>
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <limits.h>
 
+#include <libgen.h>
 #include <signal.h>
 #include <time.h>
 
@@ -188,19 +191,24 @@ static void rem_active(int signo, siginfo_t *info, void *uctx)
   * print_command_help: show comand help
   * =============================================================================
   */
-static void print_command_help()
+static void print_command_help(const char *pipe_name)
 {
-  fprintf(stderr, "Invalid command entered\n");
-  fprintf(stderr, "Command List:\n");
-  fprintf(stderr, "run <inputfile>\t: run CircuitSeqSolver for inputfile\n");
-  fprintf(stderr, "exit\t\t: exit shell, showing the results for all the processes\n");
+  const char * msg = "Invalid command entered\n";
+  if (!pipe_name)
+    fputs(msg, stderr);
+  else {
+    FILE *pipe_out = fopen(pipe_name, "w+");
+    fputs(msg, pipe_out);
+    fflush(pipe_out);
+    fclose(pipe_out);
+  }
 }
 
 /* =============================================================================
   * run_solver: spawn a new Circuit Seq Solver as a detached process
   * =============================================================================
   */
-static void run_solver(const char *inputfile)
+static void run_solver(const char *inputfile, char *pipe_name)
 {
   if (global_max_children != -1 && global_active == global_max_children) 
     pause();
@@ -208,7 +216,8 @@ static void run_solver(const char *inputfile)
   pid_t cid = fork();
   if (cid == 0) {
     // child
-    if (execl(SOLVER, SOLVER, "-t", DEFAULT_PARALELISM, inputfile, (char *) NULL) == -1) {
+    // if pipe_name == NULL, everything goes without problem to stdout
+    if (execl(SOLVER, SOLVER, "-t", DEFAULT_PARALELISM, inputfile, pipe_name, (char *) NULL) == -1) {
       perror("FATAL ERROR: run_solver: execl");
       exit(-2);
     }
@@ -217,7 +226,6 @@ static void run_solver(const char *inputfile)
     // error
     perror("run_solver: fork");
   }
-  
   add_process(cid);
 }
 
@@ -255,16 +263,21 @@ static void execute_command(const command_t cmd)
 {
   switch (cmd.code) {
     case run_code:
-      run_solver(cmd.inputfile);
+      ;
+      char *pipe_name_cpy = cmd.pipe_name;
+      run_solver(cmd.inputfile, pipe_name_cpy); // default for pipe_name is NULL
       break;
     case exit_code:
       exit_shell();
       break; 
     case invalid_code:
     default:
-      print_command_help();
+      print_command_help(cmd.pipe_name);
       break;
   }
+
+  if (cmd.pipe_name) 
+    free(cmd.pipe_name);
 }
 
 void install_handler(void (*handler)(int, siginfo_t *, void *), int signo)
@@ -276,10 +289,28 @@ void install_handler(void (*handler)(int, siginfo_t *, void *), int signo)
   struct sigaction action;
   action.sa_sigaction = handler;
   action.sa_mask = mask;
-  action.sa_flags = SA_NOCLDSTOP; // nevermind stopped children
+  // nevermind stopped children
+  action.sa_flags = SA_NOCLDSTOP ^ SA_RESTART;
 
   sigaction(signo, &action, NULL);
 }
+
+
+static char * get_pipe_name(const char * basename)
+{
+  char *name = malloc((PATH_MAX + 16) * sizeof(char));
+  char dir[PATH_MAX];
+  assert(getcwd(dir, PATH_MAX));
+
+  if (snprintf(name, PATH_MAX + 15, "%s/%s.pipe", dir, basename) < 0) {
+    fprintf(stderr, "snprintf returned error\n");
+    free(name);
+    exit(EXIT_FAILURE);
+  }
+
+  return name;
+}
+
 
 
 /* =============================================================================
@@ -297,19 +328,55 @@ int main(int argc, char** argv){
   /* Initialization */
   parseArgs(argc, (char** const)argv);
 
+  // generate pipe name
+  char * pipe_name = get_pipe_name(basename(argv[0]));
+  mkfifo(pipe_name, 0666);
+  FILE * pipe_in = fopen(pipe_name, "r+");
+  assert(pipe_in);
+
+
   global_proc = vector_alloc(global_max_children);
   if (global_proc == NULL) {
     fprintf(stderr, "failed to initialize proc list. aborting\n");
     return -1;
   }
 
-  command_t cmd;
+  command_t cmd; cmd.code = invalid_code;
+  fd_set rfds;
+  // this is stupid (stdin -> 0), but you can never be to careful with FS's
+  // also, if there were more input pipes, it would be reasonable to do this
+  int max_fd = (fileno(stdin) > fileno(pipe_in)) ? fileno(stdin) : fileno(pipe_in);
   do {
-    cmd = get_command();
-    execute_command(cmd);
+    FD_ZERO(&rfds);
+    FD_SET(fileno(stdin), &rfds);
+    FD_SET(fileno(pipe_in), &rfds);
+
+    errno = 0;
+    while (select(max_fd + 1, &rfds, NULL, NULL, NULL) == -1) {
+      if (errno == EINTR) {
+        errno = 0;
+        continue;
+      }
+
+      perror("select");
+      exit(EXIT_FAILURE);
+    }
+
+    if (FD_ISSET(fileno(stdin), &rfds)) {
+      cmd = get_command(stdin);
+      execute_command(cmd);
+    }
+    if (FD_ISSET(fileno(pipe_in), &rfds)) {
+      cmd = get_command(pipe_in);
+      execute_command(cmd);
+    }
+    
   } while (cmd.code != exit_code);
 
   vector_free(global_proc);
+  fclose(pipe_in);
+  if (unlink(pipe_name) == -1) perror("unlink"); 
+  free(pipe_name);
   exit(0);
 }
 

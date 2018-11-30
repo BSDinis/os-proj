@@ -1,4 +1,4 @@
-all: par seq sish ash
+all: par seq sish ash clnt
 
 ash: 
 	make -C CircuitRouter-AdvShell 

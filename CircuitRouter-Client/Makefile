@@ -48,7 +48,7 @@ LIBUTILS = ../lib/libutils.a
 # creates rules based on their dependencies
 #
 # utils is a target that recompiles the library
-all: depend $(LIBUTILS) $(SOLVER) $(TARGETS) 
+all:  depend $(LIBUTILS) $(SOLVER) $(TARGETS) 
 
 $(SOLVER):
 	@make -C $(SOLVERDIR)
