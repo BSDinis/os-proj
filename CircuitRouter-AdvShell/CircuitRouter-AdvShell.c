@@ -104,6 +104,20 @@ static void parseArgs (const long argc, char* const argv[]){
  */
 static void add_process(const pid_t pid)
 {
+  sigset_t mask;
+  if (sigemptyset(&mask) == -1) {
+    perror("sigemptyset");
+    exit(EXIT_FAILURE);
+  }
+  if (sigaddset(&mask, SIGCHLD) == -1) {
+    perror("sigemptyset");
+    exit(EXIT_FAILURE);
+  }
+  if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1) {
+    perror("sigprocmask");
+    exit(EXIT_FAILURE);
+  }
+
   child_ctx_t *ptr = malloc(sizeof(child_ctx_t));
   if (ptr == NULL) {
     perror("add_process: malloc");
@@ -115,13 +129,19 @@ static void add_process(const pid_t pid)
     exit(-1);
   }
   ptr->pid = pid;
-  ptr->sec = -1;
+  ptr->sec = 0;
   ptr->status = -1;
+  
   if (vector_pushBack(global_proc, (void *) ptr) == FALSE)  {
     fprintf(stderr, "add_process: vector_pushBack returned error\n. Aborting.");
     abort();
   }
   global_active++;
+
+  if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1) {
+    perror("sigprocmask");
+    exit(EXIT_FAILURE);
+  }
 }
 
 static long get_secs(const struct timespec *a, const struct timespec *b)
@@ -177,7 +197,7 @@ static void rem_active(int signo, siginfo_t *info, void *uctx)
     child_ctx_t *finished = find_ctx(global_proc, pid);
     if (finished == NULL) {
       write(2, "rem_active: lookup failed\n", strlen("rem_active: lookup failed\n")+1);
-      exit(-2); // this may need to be removed if not all children are solvers
+      exit(-2);
     }
 
     finished->status = status;
@@ -198,6 +218,7 @@ static void print_command_help(const char *pipe_name)
     fputs(msg, stderr);
   else {
     FILE *pipe_out = fopen(pipe_name, "w+");
+    assert(pipe_out);
     fputs(msg, pipe_out);
     fflush(pipe_out);
     fclose(pipe_out);
@@ -238,11 +259,22 @@ static void exit_shell()
   while (global_active != 0)
     pause();
 
-  ssize_t size = vector_getSize(global_proc);
-  for (ssize_t i = 0; i < size; i++) {
-    void * data = vector_at(global_proc, i);
-    if (data == NULL) continue;
+  sigset_t mask;
+  if (sigemptyset(&mask) == -1) {
+    perror("sigemptyset");
+    exit(EXIT_FAILURE);
+  }
+  if (sigaddset(&mask, SIGCHLD) == -1) {
+    perror("sigemptyset");
+    exit(EXIT_FAILURE);
+  }
+  if (sigprocmask(SIG_BLOCK, &mask, NULL) == -1) {
+    perror("sigprocmask");
+    exit(EXIT_FAILURE);
+  }
 
+  void * data;
+  while ((data = vector_popBack(global_proc)) != NULL) {
     child_ctx_t * ctx = (child_ctx_t * ) data;
     fprintf(stdout, "CHILD EXITED (PID=%d; return %sOK; %ld s)\n", 
         ctx->pid, 
@@ -253,6 +285,10 @@ static void exit_shell()
   }
   
   printf("END.\n");
+  if (sigprocmask(SIG_UNBLOCK, &mask, NULL) == -1) {
+    perror("sigprocmask");
+    exit(EXIT_FAILURE);
+  }
 }
 
 /* =============================================================================
@@ -268,7 +304,6 @@ static void execute_command(const command_t cmd)
       run_solver(cmd.inputfile, pipe_name_cpy); // default for pipe_name is NULL
       break;
     case exit_code:
-      exit_shell();
       break; 
     case invalid_code:
     default:
@@ -283,8 +318,14 @@ static void execute_command(const command_t cmd)
 void install_handler(void (*handler)(int, siginfo_t *, void *), int signo)
 {
   sigset_t mask;
-  sigemptyset(&mask);
-  sigaddset(&mask, signo);
+  if (sigemptyset(&mask) == -1) {
+    perror("sigemptyset");
+    exit(EXIT_FAILURE);
+  }
+  if (sigaddset(&mask, signo) == -1) {
+    perror("sigemptyset");
+    exit(EXIT_FAILURE);
+  }
 
   struct sigaction action;
   action.sa_sigaction = handler;
@@ -292,7 +333,10 @@ void install_handler(void (*handler)(int, siginfo_t *, void *), int signo)
   // nevermind stopped children
   action.sa_flags = SA_NOCLDSTOP ^ SA_RESTART;
 
-  sigaction(signo, &action, NULL);
+  if (sigaction(signo, &action, NULL) == -1) {
+    perror("sigaction");
+    exit(EXIT_FAILURE);
+  }
 }
 
 
@@ -301,7 +345,6 @@ static char * get_pipe_name(const char * basename)
   char *name = malloc((PATH_MAX + 16) * sizeof(char));
   char dir[PATH_MAX];
   assert(getcwd(dir, PATH_MAX));
-
   if (snprintf(name, PATH_MAX + 15, "%s/%s.pipe", dir, basename) < 0) {
     fprintf(stderr, "snprintf returned error\n");
     free(name);
@@ -330,10 +373,12 @@ int main(int argc, char** argv){
 
   // generate pipe name
   char * pipe_name = get_pipe_name(basename(argv[0]));
-  mkfifo(pipe_name, 0666);
+  if (mkfifo(pipe_name, 0666) == -1) {
+    perror("mkfifo");
+    exit(EXIT_FAILURE);
+  }
   FILE * pipe_in = fopen(pipe_name, "r+");
   assert(pipe_in);
-
 
   global_proc = vector_alloc(global_max_children);
   if (global_proc == NULL) {
@@ -346,6 +391,8 @@ int main(int argc, char** argv){
   // this is stupid (stdin -> 0), but you can never be to careful with FS's
   // also, if there were more input pipes, it would be reasonable to do this
   int max_fd = (fileno(stdin) > fileno(pipe_in)) ? fileno(stdin) : fileno(pipe_in);
+
+  int keep_going = 1;
   do {
     FD_ZERO(&rfds);
     FD_SET(fileno(stdin), &rfds);
@@ -365,13 +412,20 @@ int main(int argc, char** argv){
     if (FD_ISSET(fileno(stdin), &rfds)) {
       cmd = get_command(stdin);
       execute_command(cmd);
+      if (cmd.code == exit_code)
+        keep_going = 0;
     }
     if (FD_ISSET(fileno(pipe_in), &rfds)) {
       cmd = get_command(pipe_in);
       execute_command(cmd);
+      if (cmd.code == exit_code)
+        keep_going = 0;
     }
     
-  } while (cmd.code != exit_code);
+  } while (keep_going);
+
+
+  exit_shell();
 
   vector_free(global_proc);
   fclose(pipe_in);
