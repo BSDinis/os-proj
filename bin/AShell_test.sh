@@ -7,7 +7,7 @@ then
   exit 1
 fi
 
-./gen_shell_inputs.py $1 > .a.tmp
+./gen_shell_inputs.py $1 $2 > .a.tmp
 
 echo "====================================="
 echo "=========== Regular Tests ==========="

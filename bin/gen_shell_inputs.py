@@ -29,17 +29,26 @@ for i in range(len(heavy)):
 for a in sys.argv:
     if a == 'heavy':
         input_list += heavy
+    elif a.isdigit():
+        size = int(a)
 
 bad_inputs = [
     'dddas asdf',
     'run ../inputs/random-x64-y64-z3-n48.txt asd',
-    ' exit'
 ]
 
 
-l = input_list + 2* bad_inputs;
+l = []
+i = 0
+while i != size:
+    flip = round(random.random())
+    if (flip == 0):
+        l += [bad_inputs[random.randint(0, len(bad_inputs) - 1)]]
+    else:
+        i += 1
+        l += [input_list[random.randint(0, len(input_list) - 1)]]
 
-l = random.sample(l, len(l))
+l += ['exit']
 
 for e in l:
     print(e)
