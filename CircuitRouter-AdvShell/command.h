@@ -24,10 +24,11 @@ typedef struct {
   int code;
   char inputfile[MAXFILENAMESIZE+1];
   int has_inputfile;
+  char *pipe_name;
 } command_t;
 
-/* get a command from stdin (displays prompt)*/
-command_t get_command();
+/* get a command from input stream (displays prompt)*/
+command_t get_command(FILE *is);
 
 /* print a command (debug)*/
 void print_command(command_t);
