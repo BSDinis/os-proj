@@ -7,11 +7,22 @@ then
   exit 1
 fi
 
-./gen_shell_inputs.py > .a.tmp
+./gen_shell_inputs.py $1 > .a.tmp
+
+echo "====================================="
+echo "=========== Regular Tests ==========="
+echo "====================================="
 ../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
 
+echo "====================================="
+echo "=========== Valgrind Tests =========="
+echo "====================================="
 valgrind ../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
 echo "" > .a.tmp
+
+echo "====================================="
+echo "============= Extra Tests ==========="
+echo "====================================="
 valgrind ../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
 
 rm .a.tmp
