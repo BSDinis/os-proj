@@ -210,7 +210,7 @@ static void rem_active(int signo, siginfo_t *info, void *uctx)
       exit(-1); // FIXME - no error message - reentrancy
     }
     
-    child_ctx_t *finished = hashtable_rem(global_active, (void *)&pid);
+    child_ctx_t *finished = hashtable_rem(global_active, (void *)&pid); // FIXME - non-reentering
     if (finished == NULL) {
       perror("rem_active: hashtable lookup failed");
       exit(-2); // this may need to be removed if not all children are solvers
