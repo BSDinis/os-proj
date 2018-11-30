@@ -26,6 +26,7 @@ for i in range(len(input_list)):
 for i in range(len(heavy)):
     heavy[i] = "run ../inputs/"+heavy[i];
 
+size = 16
 for a in sys.argv:
     if a == 'heavy':
         input_list += heavy
@@ -41,7 +42,8 @@ bad_inputs = [
 l = []
 i = 0
 while i != size:
-    flip = round(random.random())
+    #flip = round(random.random())
+    flip = 1
     if (flip == 0):
         l += [bad_inputs[random.randint(0, len(bad_inputs) - 1)]]
     else:
@@ -53,5 +55,3 @@ l += ['exit']
 for e in l:
     print(e)
     print("\033[1m" + e + "\033[0m", file = sys.stderr)
-
-print("exit")

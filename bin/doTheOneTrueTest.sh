@@ -1,7 +1,7 @@
 #!/usr/bin/zsh
 #!/usr/bin/bash
 
-if [ $# -ne 1 ]
+if [ $# -lt 1 ]
 then
   echo "dude... how many threads?"
   exit 1
@@ -15,7 +15,7 @@ echo "============================================================"
 echo " == SOLVING FILE " $file
 echo "============================================================"
 echo
-../bin/doTest.sh $1 $file
+../CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $1 $file ./abc.pipe
 
 echo "============================================================"
 echo " == SOLVED " $file

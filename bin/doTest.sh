@@ -70,7 +70,11 @@ add_new_entry () {
 speedup_file=$2.speedups.csv 
 new_speedup_file=../results/$(basename ${speedup_file})
 echo -n "" > ${speedup_file}
-echo -n "" > ${new_speedup_file}
+
+if [[ $store_speedup == "yes" ]]
+then
+  echo -n "" > ${new_speedup_file}
+fi
 
 
 echo "==          DO TEST         =="
@@ -82,6 +86,7 @@ echo "== speedup_file: "${speedup_file}" =="
 
 echo "#n_threads,\ttime,\t\tspeedup" >> ${speedup_file}
 echo "== Running sequential =="
+
 if [[ $mem == "yes" ]] 
 then
   valgrind ../CircuitRouter-SeqSolver/CircuitRouter-SeqSolver $2

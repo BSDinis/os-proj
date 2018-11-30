@@ -14,6 +14,7 @@ echo "=========== Regular Tests ==========="
 echo "====================================="
 ../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
 
+: '
 echo "====================================="
 echo "=========== Valgrind Tests =========="
 echo "====================================="
@@ -25,5 +26,7 @@ echo "============= Extra Tests ==========="
 echo "====================================="
 valgrind ../CircuitRouter-AdvShell/CircuitRouter-AdvShell < .a.tmp
 
+'
 rm .a.tmp
+
 
