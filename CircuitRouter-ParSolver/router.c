@@ -340,7 +340,7 @@ void *router_solve (void* argPtr){
       pointVectorPtr = doTraceback(gridPtr, myGridPtr, dstPtr, bendCost);
       if (pointVectorPtr) {
         merge_success = FALSE;
-        success = TRUE;
+        success = FALSE;
         if ((merge_success = grid_checkPath_Ptr(gridPtr, pointVectorPtr)) == TRUE) 
           grid_addPath_Ptr(gridPtr, pointVectorPtr);
       }

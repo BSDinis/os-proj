@@ -15,7 +15,7 @@ echo "============================================================"
 echo " == SOLVING FILE " $file
 echo "============================================================"
 echo
-../CircuitRouter-ParSolver/CircuitRouter-ParSolver -t $1 $file ./abc.pipe
+./doTest.sh $1 $file
 
 echo "============================================================"
 echo " == SOLVED " $file

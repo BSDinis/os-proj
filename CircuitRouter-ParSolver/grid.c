@@ -347,7 +347,7 @@ static int compare_positions(const void * a, const void *b)
    * a < b iff
    * a.z < b.z || (a.z == b.z && a.y < b.y) || (a.z == b.z && a.y == b.y && a.x < b.x)
    */
-  return (int) (((const long *) a)  - ((const long *) b));
+  return (int) (((const unsigned long *) a)  - ((const unsigned long *) b));
 }
 
 

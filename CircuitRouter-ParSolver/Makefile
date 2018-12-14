@@ -53,7 +53,7 @@ $(LIBUTILS):
 	@make -C ../lib
 
 # create executable
-CircuitRouter-ParSolver: $(OBJECTS) 
+CircuitRouter-ParSolver: $(OBJECTS)
 
 # PHONY means it always runs 
 # (doesn't check if the dependencies didn't change)

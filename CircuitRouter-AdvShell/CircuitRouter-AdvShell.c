@@ -35,7 +35,6 @@
 
 #include "command.h"
 #include "lib/vector.h"
-#include "lib/hashtable.h"	
 
 #define SOLVER "../CircuitRouter-ParSolver/CircuitRouter-ParSolver"
 #define DEFAULT_PARALELISM "8"
@@ -373,6 +372,9 @@ int main(int argc, char** argv){
 
   // generate pipe name
   char * pipe_name = get_pipe_name(basename(argv[0]));
+  if (access(pipe_name, F_OK) == 0)
+    unlink(pipe_name);
+
   if (mkfifo(pipe_name, 0666) == -1) {
     perror("mkfifo");
     exit(EXIT_FAILURE);
